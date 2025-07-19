@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     mongo_database: str
     mongo_url: str
     environment: str
+    stytch_project_id: str
+    stytch_secret: str
 
     class Config:
         env_file = f".env"
