@@ -6,6 +6,7 @@ from server.db.mongo import get_collection
 
 Users = get_collection("users")
 
+
 class UserModel(BaseModel):
     userId: str
     username: str
@@ -14,10 +15,12 @@ class UserModel(BaseModel):
     updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
     imageKey: Optional[str] = None
 
+
 class CreateUserRequest(BaseModel):
     username: str
     email: str
     imageKey: Optional[str] = None
+
 
 class UpdateUserRequest(BaseModel):
     userId: str
@@ -25,8 +28,10 @@ class UpdateUserRequest(BaseModel):
     email: Optional[str] = None
     imageKey: Optional[str] = None
 
+
 class DeleteUserRequest(BaseModel):
     userId: str
+
 
 class PublicUserModel(BaseModel):
     userId: str
@@ -38,7 +43,7 @@ class PublicUserModel(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
+
 class GetUserRequest(BaseModel):
     userId: str
     authorized: bool = False
-    

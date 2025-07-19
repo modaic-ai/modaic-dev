@@ -9,11 +9,12 @@ from server.db.mongo import get_collection
 Repos = get_collection("repos")
 Visibility = Literal["private", "public"]
 
+
 class RepoModel(BaseModel):
     repoId: str
     name: str
     description: str
-    adminId: str # reference to the user who created it for now
+    adminId: str  # reference to the user who created it for now
     created: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
     visibility: Visibility = "private"
@@ -22,11 +23,13 @@ class RepoModel(BaseModel):
     imageKeys: List[str] = []
     forkedFrom: Optional[str] = None
 
+
 class CreateRepoRequest(BaseModel):
     name: str
     description: str
     visibility: Visibility = "private"
     adminId: str
+
 
 class UpdateRepoRequest(BaseModel):
     repoId: str
@@ -39,7 +42,8 @@ class UpdateRepoRequest(BaseModel):
     imageKeys: Optional[List[str]] = None
     forkedFrom: Optional[str] = None
 
-class PublicRepoModel(BaseModel): # what other people are allowed to see
+
+class PublicRepoModel(BaseModel):  # what other people are allowed to see
     name: str
     description: str
     visibility: Visibility
@@ -53,8 +57,10 @@ class PublicRepoModel(BaseModel): # what other people are allowed to see
 
     model_config = ConfigDict(extra="ignore")
 
+
 class DeleteRepoRequest(BaseModel):
     repoId: str
+
 
 class GetRepoRequest(BaseModel):
     repoId: str

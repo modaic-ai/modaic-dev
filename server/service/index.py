@@ -1,5 +1,4 @@
-from server.service.user import UserService
-from server.service.repo import RepoService
+from server.service.user import user_service
+from server.service.repo import repo_service
 
-user_service = UserService()
-repo_service = RepoService()
+__all__ = ["user_service", "repo_service"]
