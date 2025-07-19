@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import AppLayout from "@/layouts/AppLayout";
 import { handleLinkedInWebView } from "@/lib/utils";
 import { Toaster as SonnerToaster } from "sonner";
+import Head from "next/head";
 
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -28,7 +29,8 @@ const fontSans = FontSans({
 });
 
 const queryClient = new QueryClient();
-export const stytch = createStytchUIClient(
+{
+  /*export const stytch = createStytchUIClient(
   environment.stytch_public_token as string,
   {
     cookieOptions: {
@@ -38,7 +40,8 @@ export const stytch = createStytchUIClient(
         .replace("www.", ""),
     },
   }
-);
+);*/
+}
 
 export default function App({ Component, pageProps }: AppPropsWithLayout) {
   const getLayout =
@@ -83,8 +86,30 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
   }, [toast, toastId]);
 
   return (
-    <StytchProvider stytch={stytch}>
+    //<StytchProvider stytch={stytch}>
+    <>
       <QueryClientProvider client={queryClient}>
+        <Head>
+          <title>Modaic</title>
+          <meta
+            name="description"
+            content="Everything is computerized, but not everything is computerized."
+          />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <meta
+            property="og:title"
+            content="Modaic: The Art of the Game"
+          />
+          <meta
+            property="og:description"
+            content="Everything is computerized, but not everything is computerized."
+          />
+          <meta property="og:image" content="/opengraph-image.jpg" />
+          <meta property="og:url" content="https://www.modaic.dev" />
+          <meta property="og:type" content="website" />
+          <link rel="icon" href="/favicon.ico" />
+          <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        </Head>
         <div className={fontSans.className}>
           {getLayout(
             <>
@@ -97,6 +122,7 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
           )}
         </div>
       </QueryClientProvider>
-    </StytchProvider>
+    </>
+    //</StytchProvider>
   );
 }
