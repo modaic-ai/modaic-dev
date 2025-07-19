@@ -1,5 +1,5 @@
-from server.service.index import *
-from server.models.index import *
+from src.service.index import *
+from src.models.index import *
 from fastapi import APIRouter
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse

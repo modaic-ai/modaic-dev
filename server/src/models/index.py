@@ -1,5 +1,5 @@
-from server.models.repo import *
-from server.models.user import *
+from src.models.repo import *
+from src.models.user import *
 
 repo_models = [
     "Repos",

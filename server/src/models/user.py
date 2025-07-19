@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from pytz import UTC
 from typing import Optional
-from server.db.mongo import get_collection
+from src.db.mongo import get_collection
 
 Users = get_collection("users")
 

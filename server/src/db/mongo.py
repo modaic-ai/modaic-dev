@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 from pymongo.collection import Collection
-from server.core.config import settings
+from src.core.config import settings
 
 client = MongoClient(
     host=settings.mongo_url,

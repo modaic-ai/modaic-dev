@@ -1,9 +1,9 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 import os
-from server.db.index import lifespan
+from fastapi import FastAPI
+from dotenv import load_dotenv
 from contextlib import asynccontextmanager
+from src.db.index import lifespan
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 

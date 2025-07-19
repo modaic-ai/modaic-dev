@@ -5,7 +5,7 @@ import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from typing import List, Callable
-from server.db.mongo import client as mongo_client
+from src.db.mongo import client as mongo_client
 
 
 class GracefulExit:

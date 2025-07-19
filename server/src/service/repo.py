@@ -1,4 +1,4 @@
-from server.models.index import *
+from src.models.index import *
 import uuid
 from typing import Union
 

@@ -10,3 +10,4 @@ stytch
 dspy
 black
 pytz
+boto3

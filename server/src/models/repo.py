@@ -4,7 +4,7 @@ from pydantic import Field
 from pydantic import ConfigDict
 from pytz import UTC
 from typing import Literal, Optional, List
-from server.db.mongo import get_collection
+from src.db.mongo import get_collection
 
 Repos = get_collection("repos")
 Visibility = Literal["private", "public"]
