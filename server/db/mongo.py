@@ -9,7 +9,7 @@ client = MongoClient(
     connectTimeoutMS=10000,
     socketTimeoutMS=30000,
 )
-db = client[settings.mongo_initdb_database]
+db = client[settings.mongo_database]
 
 
 def get_collection(collection_name: str) -> Collection:

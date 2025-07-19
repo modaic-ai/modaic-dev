@@ -2,12 +2,23 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
+from server.db.index import lifespan
+from contextlib import asynccontextmanager
 
 load_dotenv()
 
 app = FastAPI(
-    title="Modaic API", description="A FastAPI application for Modaic", version="1.0.0"
+    lifespan=lifespan,
+    title="Modaic API",
+    description="A FastAPI application for Modaic",
+    version="1.0.0",
 )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+
 
 app.add_middleware(
     CORSMiddleware,
