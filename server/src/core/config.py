@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from src.lib.index import logger
+from src.lib.logger import logger
 import os
 from dotenv import load_dotenv
 

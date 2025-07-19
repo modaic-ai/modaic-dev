@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from src.db.index import lifespan
+from src.api.index import repo_router, user_router
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
@@ -27,6 +28,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(repo_router, prefix="/repo")
+app.include_router(user_router, prefix="/user")
 
 
 @app.get("/")
