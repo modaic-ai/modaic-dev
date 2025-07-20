@@ -14,12 +14,17 @@ class UserModel(BaseModel):
     created: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
     imageKey: Optional[str] = None
+    fullName: Optional[str] = None
+    profilePictureUrl: Optional[str] = None
 
 
 class CreateUserRequest(BaseModel):
+    userId: str
     username: str
     email: str
     imageKey: Optional[str] = None
+    fullName: Optional[str] = None
+    profilePictureUrl: Optional[str] = None
 
 
 class UpdateUserRequest(BaseModel):
@@ -27,6 +32,8 @@ class UpdateUserRequest(BaseModel):
     username: Optional[str] = None
     email: Optional[str] = None
     imageKey: Optional[str] = None
+    fullName: Optional[str] = None
+    profilePictureUrl: Optional[str] = None
 
 
 class DeleteUserRequest(BaseModel):
@@ -40,6 +47,8 @@ class PublicUserModel(BaseModel):
     created: datetime
     updated: datetime
     imageKey: Optional[str] = None
+    fullName: Optional[str] = None
+    profilePictureUrl: Optional[str] = None
 
     model_config = ConfigDict(extra="ignore")
 

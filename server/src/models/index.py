@@ -1,5 +1,6 @@
 from src.models.repo import *
 from src.models.user import *
+from src.models.contributor import *
 
 repo_models = [
     "Repos",
@@ -19,4 +20,8 @@ user_models = [
     "GetUserRequest",
     "PublicUserModel",
 ]
-__all__ = repo_models + user_models
+contributor_models = [
+    "Contributors",
+    "Contributor",
+]
+__all__ = repo_models + user_models + contributor_models

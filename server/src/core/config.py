@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     environment: str
     stytch_project_id: str
     stytch_secret: str
+    stytch_project_domain: str
+    gmail_app_password: str
+    next_url: str
 
     class Config:
         env_file = f".env"

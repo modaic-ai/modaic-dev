@@ -4,6 +4,7 @@ import requests
 import base64
 from stytch import Client
 from stytch.core.response_base import StytchError
+from stytch.consumer.models.users import User as StytchUser
 
 client = Client(
     project_id=settings.stytch_project_id,

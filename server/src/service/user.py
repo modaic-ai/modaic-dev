@@ -9,7 +9,7 @@ class UserService:
 
     def create_user(self, request: CreateUserRequest) -> UserModel:
         user = UserModel(
-            userId=str(uuid.uuid4()),
+            userId=request.userId,
             username=request.username,
             email=request.email,
             created=datetime.now(UTC),

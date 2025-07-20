@@ -1,0 +1,31 @@
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, Literal
+from datetime import datetime
+from pytz import UTC
+from src.db.mongo import get_collection
+
+Contributors = get_collection("contributors")
+
+
+class Contributor(BaseModel):
+    contributorId: str
+    userId: Optional[str] = None
+    username: Optional[str] = None
+    email: str
+    repoId: str
+    accessLevel: Literal["read", "write", "admin"] = "read"
+    invitedAt: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    acceptedAt: Optional[datetime] = None
+    pending: bool = True
+    invitedBy: str
+
+
+class PublicContributor(BaseModel):
+    contributorId: str
+    userId: Optional[str] = None
+    username: Optional[str] = None
+    repoId: str
+    accessLevel: Literal["read", "write", "admin"] = "read"
+    pending: bool = True
+
+    model_config = ConfigDict(extra="ignore")
