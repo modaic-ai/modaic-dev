@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     stytch_project_domain: str
     gmail_app_password: str
     next_url: str
+    s3_bucket_name: str
+    cloudfront_domain: str
 
     class Config:
         env_file = f".env"

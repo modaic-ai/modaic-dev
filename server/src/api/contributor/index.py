@@ -17,7 +17,7 @@ class InviteContributer(BaseModel):
     emailToInvite: str
 
 
-@router.post("/invite/repo/{repo_id}/contributor")
+@router.post("/repo/{repo_id}")
 def invite_contributer(
     repo_id: str,
     payload: InviteContributer,
@@ -132,7 +132,7 @@ def invite_contributer(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/revoke/invite/repo/{repo_id}/contributor/{contributor_id}")
+@router.delete("/repo/{repo_id}/{contributor_id}/invite")
 def revoke_invite(
     repo_id: str, contributor_id: str, _: UserModel = Depends(manager.required.ADMIN)
 ):
@@ -159,8 +159,10 @@ def revoke_invite(
         raise HTTPException(status_code=500, detail="Failed to revoke invite")
 
 
-@router.get("/all/repo/{repo_id}")
-def get_all_contributors_for_repo(repo_id: str, _: UserModel = Depends(manager.optional.READ)):
+@router.get("/repo/{repo_id}")
+def get_all_contributors_for_repo(
+    repo_id: str, _: UserModel = Depends(manager.optional.READ)
+):
     try:
         contributors = Contributors.find({"repoId": repo_id}, {"_id": 0})
         contributors = list(contributors)
@@ -176,7 +178,7 @@ class ToggleContributorRole(BaseModel):
     role: Literal["owner", "write", "read"]
 
 
-@router.patch("/toggle/repo/{repo_id}/contributor/{contributor_id}")
+@router.patch("/repo/{repo_id}/{contributor_id}/role")
 def toggle_contributor_role(
     repo_id: str,
     contributor_id: str,
@@ -207,7 +209,7 @@ def toggle_contributor_role(
         raise HTTPException(status_code=500, detail="Failed to toggle contributor role")
 
 
-@router.delete("/delete/repo/{repo_id}/contributor/{contributor_id}")
+@router.delete("/repo/{repo_id}/{contributor_id}")
 def delete_contributor(
     repo_id: str, contributor_id: str, _: UserModel = Depends(manager.required.ADMIN)
 ):
@@ -232,8 +234,10 @@ def delete_contributor(
         raise HTTPException(status_code=500, detail="Failed to delete contributor")
 
 
-@router.patch("/accept/invite/repo/{repo_id}/contributor/{user_id}")
-def accept_invite(repo_id: str, user_id: str, user: UserModel = Depends(manager.required)):
+@router.patch("/repo/{repo_id}/{user_id}/accept")
+def accept_invite(
+    repo_id: str, user_id: str, user: UserModel = Depends(manager.required)
+):
     try:
         existing_contributor = Contributors.find_one(
             {"userId": user_id, "repoId": repo_id}, {"_id": 0}
@@ -264,8 +268,10 @@ def accept_invite(repo_id: str, user_id: str, user: UserModel = Depends(manager.
         raise HTTPException(status_code=500, detail="Failed to accept invite")
 
 
-@router.delete("/reject/invite/repo/{repo_id}/contributor/{user_id}")
-def reject_invite(repo_id: str, user_id: str, user: UserModel = Depends(manager.required)):
+@router.delete("/repo/{repo_id}/{user_id}/invite")
+def reject_invite(
+    repo_id: str, user_id: str, user: UserModel = Depends(manager.required)
+):
     try:
         existing_contributor = Contributors.find_one(
             {"userId": user_id, "repoId": repo_id}, {"_id": 0}
@@ -289,7 +295,7 @@ def reject_invite(repo_id: str, user_id: str, user: UserModel = Depends(manager.
         raise HTTPException(status_code=500, detail="Failed to reject invite")
 
 
-@router.get("/check/authorized/repo/{repo_id}")
+@router.get("/repo/{repo_id}/authorization")
 def check_authorized(
     repo_id: str, user: Optional[UserModel] = Depends(manager.optional.READ)
 ):

@@ -1,23 +1,19 @@
 import os
 import uuid
-import json
-import boto3
 from pytz import UTC
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Optional
 from pymongo import ReturnDocument
 from fastapi import APIRouter, Depends, UploadFile, File, Query, BackgroundTasks
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 from fastapi.exceptions import HTTPException
 from botocore.exceptions import ClientError
 from werkzeug.utils import secure_filename
 from src.models.index import Contributors
 from src.api.auth.utils import manager
-from src.lib.s3 import S3Bucket
 from src.models.index import (
     Repos,
     RepoModel,
+    GetRepoRequest,
     CreateRepoRequest,
     UpdateRepoRequest,
     Users,
@@ -25,17 +21,15 @@ from src.models.index import (
     UserModel,
 )
 from src.lib.logger import logger
+from src.lib.s3 import s3_client
 from src.core.config import settings
 from src.lib.stytch import client as stytch_client
 from src.service.repo import repo_service
 
 router = APIRouter()
 
-s3_bucket = S3Bucket(bucket_name=settings.s3_bucket_name)
-s3_session_client = boto3.client("s3")
 
-
-@router.get("/all/user")
+@router.get("/user")
 def get_user_repos(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
@@ -87,7 +81,7 @@ def get_user_repos(
         raise HTTPException(status_code=500, detail=f"Error fetching user repos {e}")
 
 
-@router.get("/all")
+@router.get("/")
 async def get_repos(
     limit: int = 20,
     cursor: str = None,
@@ -197,7 +191,7 @@ def get_popular_repos(limit: int = 10, _: UserModel = Depends(manager.optional))
         raise HTTPException(status_code=500, detail="Error fetching popular repos")
 
 
-@router.get("/liked/user")
+@router.get("/liked")
 def get_user_liked_repos(user: UserModel = Depends(manager.required)):
     """
     Retrieve all repos liked by the authenticated user,
@@ -220,7 +214,7 @@ def get_user_liked_repos(user: UserModel = Depends(manager.required)):
         raise HTTPException(status_code=500, detail="Error fetching liked repos")
 
 
-@router.post("/create")
+@router.post("/")
 def create_repo_endpoint(
     create_repo_payload: CreateRepoRequest,
     background_tasks: BackgroundTasks,
@@ -254,7 +248,7 @@ def create_repo_endpoint(
         raise HTTPException(status_code=500, detail="Error creating repo")
 
 
-@router.post("/upload/image/{repo_id}")
+@router.post("/{repo_id}/upload/image")
 async def upload_image_to_repo(
     repo_id: str,
     files: list[UploadFile] = File(..., description="Multiple files as UploadFile"),
@@ -297,8 +291,7 @@ async def upload_image_to_repo(
                     buffer.write(contents)
 
                 # upload to s3 and construct public url
-                s3_bucket.upload_file(temp_path, object_name)
-                image_url = f"https://{settings.cloudfront_domain}/{object_name}"
+                image_url = s3_client.upload_file(temp_path, object_name)
                 uploaded_image_urls.append(image_url)
 
                 # update repo document with new image and updated timestamp
@@ -330,7 +323,7 @@ async def upload_image_to_repo(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/delete/image/{repo_id}/{image_name}")
+@router.delete("/{repo_id}/image/{image_name}")
 def delete_image(
     repo_id: str, image_name: str, user: UserModel = Depends(manager.required.WRITE)
 ):
@@ -357,29 +350,19 @@ def delete_image(
             raise HTTPException(status_code=404, detail="Repo not found")
 
         repo = RepoModel(**repo_data)
-        filepath = f"files/{repo.adminId}/{repo_id}/images/{image_name}"
-
-        # get object metadata from s3 to determine file size
-        try:
-            response = s3_session_client.head_object(
-                Bucket=s3_bucket.bucket_name, Key=filepath
-            )
-            file_size_bytes = response["ContentLength"]
-        except ClientError as e:
-            logger.error(f"Error retrieving object metadata: {e}")
-            raise HTTPException(status_code=404, detail="Image not found in S3")
+        file_key = f"files/{repo.adminId}/{repo_id}/images/{image_name}"
 
         # remove image reference from the database
         result = Repos.update_one(
             {"repoId": repo_id},
-            {"$pull": {"imageKeys": filepath}, "$set": {"updated": datetime.now(UTC)}},
+            {"$pull": {"imageKeys": file_key}, "$set": {"updated": datetime.now(UTC)}},
         )
 
         if result.modified_count == 0:
             raise HTTPException(status_code=404, detail="Repo not found")
 
         # delete the image from s3 storage
-        s3_session_client.delete_object(Bucket=s3_bucket.bucket_name, Key=filepath)
+        s3_client.delete_file(file_key)
 
         return {"result": True}
 
@@ -388,8 +371,10 @@ def delete_image(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/images/repo/{repo_id}")
-def get_repo_images(repo_id: str, _: Optional[User] = Depends(manager.optional.READ)):
+@router.get("/{repo_id}/images")
+def get_repo_images(
+    repo_id: str, _: Optional[UserModel] = Depends(manager.optional.READ)
+):
     """
     Retrieve all image URLs associated with the specified repo.
 
@@ -420,7 +405,7 @@ def get_repo_images(repo_id: str, _: Optional[User] = Depends(manager.optional.R
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/delete/{repo_id}")
+@router.delete("/{repo_id}")
 def delete_repo(
     repo_id: str,
     background_tasks: BackgroundTasks,
@@ -443,39 +428,16 @@ def delete_repo(
     """
     try:
         # delete the repo document from the database
-        repo_to_delete = Repos.find_one_and_delete({"repoId": repo_id, "adminId": user.userId})
-
+        repo_to_delete = Repos.find_one_and_delete(
+            {"repoId": repo_id, "adminId": user.userId}
+        )
         if not repo_to_delete:
             logger.info(f"Repo {repo_id} not found or not owned by user {user.userId}")
             return {"result": False}
 
         logger.info(f"Repo {repo_id} deleted by user {user.userId}")
-
-        # prepare to clean up associated files from S3
         path_to_clean = f"files/{user.userId}/{repo_id}"
-        delete_keys = []
-        total_bytes_to_decrement = 0
-
-        paginator = s3_session_client.get_paginator("list_objects_v2").paginate(
-            Bucket=s3_bucket.bucket_name,
-            Prefix=path_to_clean,
-        )
-
-        for page in paginator:
-            if "Contents" in page:
-                for obj in page["Contents"]:
-                    delete_keys.append({"Key": obj["Key"]})
-                    total_bytes_to_decrement += obj["Size"]
-
-        # delete files from S3 and update user storage
-        if delete_keys:
-            s3_session_client.delete_objects(
-                Bucket=s3_bucket.bucket_name,
-                Delete={"Objects": delete_keys},
-            )
-
-            logger.info(f"Deleted {len(delete_keys)} files from S3 for repo {repo_id}")
-
+        s3_client.delete_directory(path_to_clean)
         return {"result": True}
 
     except Exception as e:
@@ -483,7 +445,7 @@ def delete_repo(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.patch("/update/{repo_id}")
+@router.patch("/{repo_id}")
 def update_repo(
     repo_id: str,
     update_repo_payload: UpdateRepoRequest,
@@ -535,10 +497,10 @@ def update_repo(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/repo/{repo_id}")
+@router.get("/{repo_id}")
 def get_repo_by_id(
     repo_id: str,
-    _: Optional[UserModel] = Depends(
+    user: Optional[UserModel] = Depends(
         manager.optional.READ
     ),  # Dependency handles visibility check
 ):
@@ -558,19 +520,17 @@ def get_repo_by_id(
             - 500 if an unexpected error occurs.
     """
     try:
-        repo_data = Repos.find_one({"repoId": repo_id}, {"_id": 0})
-        if not repo_data:
-            raise HTTPException(status_code=404, detail="Repo not found")
-
-        repo = RepoModel(**repo_data)
-        return {"result": repo.model_dump()}
+        repo_data = repo_service.get_repo(
+            GetRepoRequest(repoId=repo_id, authorized=True)
+        )
+        return {"result": repo_data.model_dump()}
 
     except Exception as e:
         logger.error(f"Error getting repo by id: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/like/{repo_id}")
+@router.post("/{repo_id}/like")
 def like_repo(
     repo_id: str,
     user: UserModel = Depends(manager.required),
@@ -612,7 +572,7 @@ def like_repo(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/unlike/{repo_id}")
+@router.post("/{repo_id}/unlike")
 def unlike_repo(
     repo_id: str,
     user: UserModel = Depends(manager.required),
@@ -634,7 +594,10 @@ def unlike_repo(
     """
     try:
         updated_repo = Repos.find_one_and_update(
-            {"repoId": repo_id, "stars": user.userId},  # only update if user already liked it
+            {
+                "repoId": repo_id,
+                "stars": user.userId,
+            },  # only update if user already liked it
             {"$pull": {"stars": user.userId}},  # remove user ID from 'likes' array
             return_document=ReturnDocument.AFTER,
         )
@@ -651,7 +614,7 @@ def unlike_repo(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/saved/user/{user_id}")
+@router.get("/user/{user_id}/saved")
 def get_user_saved_repos(
     user_id: str,
     user: Optional[UserModel] = Depends(manager.optional),
@@ -685,7 +648,7 @@ def get_user_saved_repos(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.patch("/add/tag/{repo_id}/{tag}")
+@router.patch("/{repo_id}/tag/{tag}")
 def add_tag(
     repo_id: str,
     tag: str,
@@ -718,7 +681,7 @@ def add_tag(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.patch("/remove/tag/{repo_id}/{tag}")
+@router.delete("/{repo_id}/tag/{tag}")
 def remove_tag(
     repo_id: str,
     tag: str,
@@ -750,7 +713,8 @@ def remove_tag(
         logger.error(f"Error removing tag: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/contributers/{repo_id}")
+
+@router.get("/{repo_id}/contributors")
 def get_repo_contributors(
     repo_id: str,
     _: Optional[UserModel] = Depends(manager.optional),

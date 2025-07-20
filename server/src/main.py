@@ -34,6 +34,7 @@ app.include_router(user_router, prefix="/user")
 app.include_router(auth_router, prefix="/auth")
 app.include_router(contributor_router, prefix="/contributor")
 
+
 @app.get("/")
 async def root():
     return {"message": "Welcome to Modaic API"}
