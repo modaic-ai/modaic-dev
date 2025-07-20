@@ -100,7 +100,7 @@ export function Navbar() {
               "dark:bg-foreground dark:text-background hover:opacity-75 transition-all duration-200 ease-in-out"
             )}
           >
-            <Link href="/register">Register</Link>
+            <Link href="/join">Sign Up</Link>
           </NavigationMenuLink>
         </NavigationMenuItem>
       </NavigationMenuList>

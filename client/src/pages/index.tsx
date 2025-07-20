@@ -230,10 +230,10 @@ function Home() {
             </div>
           </div>
           <div className="flex gap-4">
-            <Button className="mt-4 h-fit w-fit p-0 rounded-full px-8 py-4 cursor-pointer">
+            <Button className="mt-4 h-fit w-fit p-0 font-semibold rounded-full px-8 py-4 cursor-pointer">
               Get Started
             </Button>
-            <Button className="mt-4 h-fit w-fit p-0 rounded-full px-8 py-4 cursor-pointer">
+            <Button className="mt-4 h-fit w-fit p-0 font-semibold rounded-full px-8 py-4 cursor-pointer">
               Login
             </Button>
           </div>
