@@ -1,4 +1,3 @@
-from src.models.repo import CreateRepoRequest
 from src.lib.logger import logger
 from pydantic import BaseModel
 from typing import Optional
@@ -14,6 +13,7 @@ from src.models.index import (
     PublicUserModel,
     CreateUserRequest,
     UpdateUserRequest,
+    CreateRepoRequest,
 )
 from src.utils.user import generate_username
 from src.service.index import email_service, user_service, repo_service
