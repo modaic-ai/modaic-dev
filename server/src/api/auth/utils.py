@@ -61,12 +61,11 @@ class StytchAuthenticator:
         return resp.user
 
 
-# --- Local DB Lookup ---
 class UserRepository:
     @staticmethod
     def find_user_by_stytch_data(stytch_user: StytchUser) -> UserModel:
-        user_id = stytch_user.external_id or stytch_user.user_id
-        user = Users.find_one({"id": user_id})
+        user_id = stytch_user.user_id
+        user = Users.find_one({"userId": user_id})
         if not user:
             raise AuthenticationError(
                 "UserModel not found in local system after authentication"
@@ -74,14 +73,12 @@ class UserRepository:
         return UserModel(**user)
 
 
-# --- Access Level Enum ---
 class AccessLevel(str, Enum):
     ADMIN = "admin"
     READ = "read"
     WRITE = "write"
 
 
-# --- Auth Service ---
 class AuthService:
     def __init__(self):
         self.token_extractor = TokenExtractor()

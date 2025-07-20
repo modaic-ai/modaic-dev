@@ -43,7 +43,7 @@ class CompleteAuthenticationRequest(BaseModel):
     profilePictureUrl: str
 
 
-@router.post("/authenticate")
+@router.post("/")
 def authenticate(
     auth_request: CompleteAuthenticationRequest,
     background_tasks: BackgroundTasks,
@@ -297,7 +297,7 @@ def complete_onboarding(
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-@router.post("/logout")
+@router.delete("/session")
 def logout(request: Request):
     """
     Log out the current user.
