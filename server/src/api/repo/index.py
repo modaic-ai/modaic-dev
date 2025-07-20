@@ -16,8 +16,6 @@ from src.models.index import (
     GetRepoRequest,
     CreateRepoRequest,
     UpdateRepoRequest,
-    Users,
-    PublicUserModel,
     UserModel,
 )
 from src.lib.logger import logger

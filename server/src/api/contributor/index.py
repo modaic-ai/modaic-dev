@@ -92,41 +92,8 @@ def invite_contributer(
         elif not existing_user_doc:
             logger.info(f"User not found: {invite_email}..")
             raise HTTPException(status_code=404, detail="User not found")
+            # TODO: send email to user to create an account and invite them to the project
 
-        """
-
-        logger.info(f"User not found: {invite_email}... Creating user in limbo")
-
-        redirect_url = f"{settings.next_url}/auth/invite" # TODO: add functionality to send invite to non-existing users
-
-        try:
-            resp = stytch_client.magic_links.email.invite(
-                email=invite_email, invite_magic_link_url=redirect_url
-            )
-        except Exception as e:
-            logger.error(f"Error sending invite: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
-        if not resp or not resp.user_id:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to send invite. This might be due to an invalid email address.",
-            )
-
-        contributor_info = Contributor(
-            contributorId=str(uuid.uuid4()),
-            userId=resp.user_id,
-            username=None,
-            email=invite_email,
-            webId=web_id,
-            invitedBy=sender.id,
-        )
-
-        Contributors.insert_one(contributor_info.model_dump())
-        logger.info(f"Pending contributor invited: {resp.user_id}")
-
-        return {"result": resp.user_id}
-        """
     except Exception as e:
         logger.error(f"Error inviting contributor: {e}")
         raise HTTPException(status_code=500, detail=str(e))
