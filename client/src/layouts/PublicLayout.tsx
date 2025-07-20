@@ -1,14 +1,6 @@
 import { cn } from "@/lib/utils";
-import "@/styles/globals.css";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuIndicator,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
+import { Navbar } from "./Navbar";
+import Footer from "./Footer";
 
 export const metadata = {
   title: "spydr - For the questions without answers.",
@@ -21,19 +13,10 @@ export default function PublicLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className={cn("min-h-screen bg-background font-sans antialiased")}>
-      <div className="relative max-w-[1440px] mx-auto">
-        <NavigationMenu>
-          <NavigationMenuList>
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>Item One</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <NavigationMenuLink>Link</NavigationMenuLink>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
+      <div className="relative max-w-[1440px] px-16 mx-auto">
+        <Navbar />
         {children}
-        <div>footer here</div>
+        <Footer />
       </div>
     </div>
   );

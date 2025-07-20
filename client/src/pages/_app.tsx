@@ -13,6 +13,8 @@ import AppLayout from "@/layouts/AppLayout";
 import { handleLinkedInWebView } from "@/lib/utils";
 import { Toaster as SonnerToaster } from "sonner";
 import Head from "next/head";
+import { ThemeProvider } from "@/providers/theme-proivder";
+import PublicLayout from "@/layouts/PublicLayout";
 
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -25,27 +27,20 @@ type AppPropsWithLayout = AppProps & {
 const fontSans = FontSans({
   weight: ["400", "500", "600", "700", "800", "900"],
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-mono",
 });
 
 const queryClient = new QueryClient();
-{
-  /*export const stytch = createStytchUIClient(
-  environment.stytch_public_token as string,
-  {
-    cookieOptions: {
-      availableToSubdomains: true,
-      domain: environment.client_url
-        ?.replace("https://", "")
-        .replace("www.", ""),
-    },
-  }
-);*/
-}
+const stytch = createStytchUIClient(environment.stytch_public_token as string, {
+  cookieOptions: {
+    availableToSubdomains: true,
+    domain: environment.client_url?.replace("https://", "").replace("www.", ""),
+  },
+});
 
 export default function App({ Component, pageProps }: AppPropsWithLayout) {
   const getLayout =
-    Component.getLayout || ((page) => <AppLayout>{page}</AppLayout>);
+    Component.getLayout || ((page) => <PublicLayout>{page}</PublicLayout>);
   const [isOnline, setIsOnline] = useState(true);
   const [toastId, setToastId] = useState<any>(null);
   useEffect(() => {
@@ -61,7 +56,7 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
     const handleOnline = () => {
       setIsOnline(true);
       if (toastId) {
-        toast("Your internet connection has been restored.", {
+        toast.success("Your internet connection has been restored.", {
           duration: 3000,
         });
       }
@@ -69,7 +64,7 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
 
     const handleOffline = () => {
       setIsOnline(false);
-      const id = toast("No Internet Connection", {
+      const id = toast.error("No Internet Connection", {
         duration: Infinity,
       });
       setToastId(id);
@@ -86,8 +81,7 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
   }, [toast, toastId]);
 
   return (
-    //<StytchProvider stytch={stytch}>
-    <>
+    <StytchProvider stytch={stytch}>
       <QueryClientProvider client={queryClient}>
         <Head>
           <title>Modaic</title>
@@ -96,10 +90,7 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
             content="Everything is computerized, but not everything is computerized."
           />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <meta
-            property="og:title"
-            content="Modaic: The Art of the Game"
-          />
+          <meta property="og:title" content="Modaic: The Art of the Game" />
           <meta
             property="og:description"
             content="Everything is computerized, but not everything is computerized."
@@ -110,19 +101,25 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
           <link rel="icon" href="/favicon.ico" />
           <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         </Head>
-        <div className={fontSans.className}>
-          {getLayout(
-            <>
-              <Analytics />
-              <div className={`${fontSans.className}`}>
-                <Component {...pageProps} />
-                <SonnerToaster />
-              </div>
-            </>
-          )}
-        </div>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div className={fontSans.className}>
+            {getLayout(
+              <>
+                <Analytics />
+                <div className={`${fontSans.className}`}>
+                  <Component {...pageProps} />
+                  <SonnerToaster />
+                </div>
+              </>
+            )}
+          </div>
+        </ThemeProvider>
       </QueryClientProvider>
-    </>
-    //</StytchProvider>
+    </StytchProvider>
   );
 }
