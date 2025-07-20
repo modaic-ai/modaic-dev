@@ -11,7 +11,7 @@ export function useFetchUserRepos(criteria?: string) {
   return useInfiniteQuery({
     queryKey: ["user", "repos", criteria],
     queryFn: async ({ pageParam = { page: 1, direction: "forward" } }) => {
-      const response = await api.get(`/repos/all/user`, {
+      const response = await api.get(`/repo/user`, {
         params: {
           page: pageParam.page,
           page_size: 10,
@@ -37,7 +37,7 @@ export const useFetchLikedRepos = () => {
   return useQuery({
     queryKey: ["repos", "liked"],
     queryFn: async () => {
-      const response = await api.get("/repos/liked/user");
+      const response = await api.get("/repo/liked");
       return response.data.result;
     },
   });
@@ -47,11 +47,11 @@ export const useCreateRepo = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (config: any) => {
-      const response = await api.post("/repos/create", config);
+      const response = await api.post("/repo/", config);
       return response.data.result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["webs", "all"] });
+      queryClient.invalidateQueries({ queryKey: ["repos", "all"] });
     },
     onError: () => {},
   });
@@ -78,7 +78,7 @@ export const useUploadImageToRepo = (repoId: string | undefined | null) => {
         formData.append("files", file);
       });
 
-      const { data } = await api.post(`/repos/upload/image/${repoId}`, formData, {
+      const { data } = await api.post(`/repo/${repoId}/upload/image`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -107,7 +107,7 @@ export const useDeleteImageFromRepo = () => {
     }) => {
       const imageName = imageUrl.split("/").pop();
       const response = await api.delete(
-        `/repos/delete/image/${repoId}/${imageName}`
+        `/repo/${repoId}/image/${imageName}`
       );
       return response.data.result;
     },
@@ -121,7 +121,7 @@ export function useGetAllImagesForRepo(repoId?: string | null) {
   return useQuery({
     queryKey: ["images", "repo", repoId],
     queryFn: async () => {
-      const response = await api.get(`/repos/images/repo/${repoId}`);
+      const response = await api.get(`/repo/${repoId}/images`);
       return response.data.result;
     },
     enabled: !!repoId,
@@ -133,7 +133,7 @@ export function useDeleteRepo() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (repoId: string) => {
-      const response = await api.delete(`/repos/delete/${repoId}`);
+      const response = await api.delete(`/repo/${repoId}`);
       return response.data.result;
     },
     onSuccess: () => {
@@ -148,13 +148,13 @@ export const useUpdateRepo = (repoId: string | null | undefined) => {
   return useMutation({
     mutationFn: async (config: UpdateRepoRequest) => {
       if (!repoId) return;
-      const response = await api.patch(`/repos/update/${repoId}`, config, {
+      const response = await api.patch(`/repo/${repoId}`, config, {
         headers: { "Content-Type": "application/json" },
       });
       return response.data.result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["webs", "all"] });
+      queryClient.invalidateQueries({ queryKey: ["repos", "all"] });
     },
     onError: () => {},
   });
@@ -164,7 +164,7 @@ export function useFetchPublicRepos() {
   return useInfiniteQuery({
     queryKey: ["repos", "public"],
     queryFn: async ({ pageParam = null }) => {
-      const response = await api.get("/repos/all", {
+      const response = await api.get("/repo/", {
         params: {
           cursor: pageParam,
           limit: 10,
@@ -187,7 +187,7 @@ export function useFetchProfileRepos(
   return useInfiniteQuery({
     queryKey: ["repos", "profile", userId],
     queryFn: async ({ pageParam = null }) => {
-      const response = await api.get("/repos/all", {
+      const response = await api.get("/repo/", {
         params: {
           cursor: pageParam,
           limit: 10,
@@ -209,7 +209,7 @@ export function useFetchPopularRepos(limit: number) {
   return useQuery({
     queryKey: ["repos", "popular", limit],
     queryFn: async () => {
-      const response = await api.get("/repos/popular", {
+      const response = await api.get("/repo/popular", {
         params: {
           limit,
         },
@@ -225,7 +225,7 @@ export const useFetchRepoById = (repoId?: string | null) => {
     queryKey: ["repo", repoId],
     queryFn: async () => {
       if (!repoId) return null;
-      const response = await api.get(`/repos/repo/${repoId}`);
+      const response = await api.get(`/repo/${repoId}`);
       return response.data.result;
     },
     enabled: !!repoId,
@@ -236,7 +236,7 @@ export function useLikeRepo(repoId: string) {
   return useMutation({
     mutationFn: async () => {
       if (!repoId) return;
-      const response = await api.post(`/repos/like/${repoId}`);
+      const response = await api.post(`/repo/${repoId}/like`);
       return response.data.result;
     },
     onSuccess: () => {},
@@ -248,7 +248,7 @@ export function useUnlikeRepo(repoId: string) {
   return useMutation({
     mutationFn: async () => {
       if (!repoId) return;
-      const response = await api.post(`/repos/unlike/${repoId}`);
+      const response = await api.post(`/repo/${repoId}/unlike`);
       return response.data.result;
     },
     onSuccess: () => {},
@@ -259,7 +259,7 @@ export function useUnlikeRepo(repoId: string) {
 export function useAddTagToRepo(repoId: string) {
   return useMutation({
     mutationFn: async (tag: string) => {
-      const response = await api.patch(`/repos/add/tag/${repoId}/${tag}`);
+      const response = await api.patch(`/repo/${repoId}/tag/${tag}`);
       return response.data.result;
     },
     onSuccess: () => {},
@@ -270,7 +270,7 @@ export function useAddTagToRepo(repoId: string) {
 export function useRemoveTagFromRepo(repoId: string) {
   return useMutation({
     mutationFn: async (tag: string) => {
-      const response = await api.patch(`/repos/remove/tag/${repoId}/${tag}`);
+      const response = await api.delete(`/repo/${repoId}/tag/${tag}`);
       return response.data.result;
     },
     onSuccess: () => {},
@@ -332,9 +332,21 @@ export function useFetchContributers(repoId?: string | null) {
   return useQuery({
     queryKey: ["repos", "contributers", repoId],
     queryFn: async () => {
-      const response = await api.get(`/repos/contributers/${repoId}`);
+      const response = await api.get(`/repo/${repoId}/contributors`);
       return response.data.result;
     },
     enabled: !!repoId,
+  });
+}
+
+export function useFetchUserSavedRepos(userId?: string | null) {
+  return useQuery({
+    queryKey: ["repos", "saved", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const response = await api.get(`/repo/user/${userId}/saved`);
+      return response.data.result;
+    },
+    enabled: !!userId,
   });
 }

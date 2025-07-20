@@ -23,7 +23,7 @@ export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      await api.post("/auth/logout");
+      await api.delete("/auth/session");
     },
     onSuccess: () => {
       queryClient.setQueryData(["user"], null);
@@ -39,10 +39,8 @@ export function useFetchUserById(userId?: string | null) {
     queryKey: ["user", userId],
     queryFn: async () => {
       if (!userId) return null;
-      const response = await api.get(`/users/`, {
-        params: { userId },
-      });
-      const data = await response.data.result;
+      const response = await api.get(`/user/${userId}`);
+      const data = await response.data;
       return data;
     },
     enabled: !!userId,
@@ -65,11 +63,12 @@ export function useFetchUserByUsername(username?: string | null) {
 
 export function useUpdateUser() {
   return useMutation({
-    mutationFn: async (updates: UpdateUserRequest) => {
-      const response = await api.patch(`/users/edit/`, updates, {
+    mutationFn: async (updates: UpdateUserRequest & { userId: string }) => {
+      const { userId, ...updateData } = updates;
+      const response = await api.put(`/user/${userId}`, updateData, {
         headers: { "Content-Type": "application/json" },
       });
-      const data = await response.data.result;
+      const data = await response.data;
       return data;
     },
     onError: (err: any) => {
@@ -193,3 +192,42 @@ export const useUploadProfileImage = () => {
     },
   });
 };
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await api.delete(`/user/${userId}`);
+      return response.data.result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+    onError: (err: any) => {
+      console.error(err);
+    },
+  });
+}
+
+export function useCompleteOnboarding() {
+  return useMutation({
+    mutationFn: async (onboardingData: {
+      firstName: string;
+      lastName?: string;
+      username: string;
+      bio?: string;
+      occupation: string;
+      company?: string;
+      purpose: string;
+      interest?: string;
+    }) => {
+      const response = await api.post("/auth/onboarding", onboardingData, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return response.data.result;
+    },
+    onError: (err: any) => {
+      console.error(err);
+    },
+  });
+}
