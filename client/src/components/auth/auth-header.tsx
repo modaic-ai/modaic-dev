@@ -14,7 +14,7 @@ export const AuthHeader = ({
         ? "Welcome back"
         : step === "register"
           ? "Create your account"
-          : "A New Age of Software"}
+          : "Join the Community"}
     </h1>
     <p className="text-sm text-muted-foreground mt-1">
       {step === "login"

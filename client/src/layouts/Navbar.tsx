@@ -59,7 +59,7 @@ export function Navbar() {
           <NavigationMenuContent>
             <ul className="grid w-[200px] gap-4">
               <li>
-                <NavigationMenuLink asChild>
+                <NavigationMenuLink className="rounded-md" asChild>
                   <Link href="#">
                     <div className="font-medium">Components</div>
                     <div className="text-muted-foreground">
@@ -67,7 +67,7 @@ export function Navbar() {
                     </div>
                   </Link>
                 </NavigationMenuLink>
-                <NavigationMenuLink asChild>
+                <NavigationMenuLink className="rounded-md" asChild>
                   <Link href="#">
                     <div className="font-medium">Documentation</div>
                     <div className="text-muted-foreground">
@@ -75,7 +75,7 @@ export function Navbar() {
                     </div>
                   </Link>
                 </NavigationMenuLink>
-                <NavigationMenuLink asChild>
+                <NavigationMenuLink className="rounded-md" asChild>
                   <Link href="#">
                     <div className="font-medium">Blog</div>
                     <div className="text-muted-foreground">

@@ -1,29 +1,41 @@
-import React, { useState } from "react";
+import React, { ReactElement, useState } from "react";
 import { AgentList } from "@/components/agent/AgentList";
 import { useSearchAgents } from "@/hooks/agent";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import AppLayout from "@/layouts/AppLayout";
-import { NextPageWithLayout } from "@/pages/_app";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Layout } from "@/layouts/PublicLayout";
 
-const AgentsPage: NextPageWithLayout = () => {
+function AgentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
 
-  const { data: agents, isLoading } = useSearchAgents(searchQuery, selectedTags);
+  const { data: agents, isLoading } = useSearchAgents(
+    searchQuery,
+    selectedTags
+  );
 
   const popularTags = [
-    "natural-language", "code-generation", "data-analysis", 
-    "automation", "chatbot", "vision", "audio", "text-processing"
+    "natural-language",
+    "code-generation",
+    "data-analysis",
+    "automation",
+    "chatbot",
+    "vision",
+    "audio",
+    "text-processing",
   ];
 
   const handleTagClick = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
   };
 
@@ -33,7 +45,7 @@ const AgentsPage: NextPageWithLayout = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-6">
+    <div className="">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">AI Agent Hub</h1>
@@ -53,7 +65,10 @@ const AgentsPage: NextPageWithLayout = () => {
               className="w-full"
             />
           </div>
-          <Select value={sortBy} onValueChange={(value: "recent" | "popular") => setSortBy(value)}>
+          <Select
+            value={sortBy}
+            onValueChange={(value: "recent" | "popular") => setSortBy(value)}
+          >
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -74,7 +89,7 @@ const AgentsPage: NextPageWithLayout = () => {
               </Button>
             )}
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
             {popularTags.map((tag) => (
               <Button
@@ -100,7 +115,10 @@ const AgentsPage: NextPageWithLayout = () => {
               </span>
             )}
             {selectedTags.map((tag) => (
-              <span key={tag} className="bg-secondary px-2 py-1 rounded text-xs">
+              <span
+                key={tag}
+                className="bg-secondary px-2 py-1 rounded text-xs"
+              >
                 {tag}
               </span>
             ))}
@@ -118,8 +136,8 @@ const AgentsPage: NextPageWithLayout = () => {
                 {agents && ` (${agents.length} found)`}
               </h2>
             </div>
-            <AgentList 
-              agents={agents || []} 
+            <AgentList
+              agents={agents || []}
               loading={isLoading}
               emptyMessage="No agents found matching your search criteria."
             />
@@ -132,20 +150,30 @@ const AgentsPage: NextPageWithLayout = () => {
                 Popular and recently updated agents from the community
               </p>
             </div>
-            
+
             {/* For now, show empty state with search prompt */}
             <div className="text-center py-12">
               <div className="mx-auto max-w-sm">
                 <div className="rounded-full bg-muted p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  <svg
+                    className="w-8 h-8 text-muted-foreground"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
                   </svg>
                 </div>
                 <h3 className="text-lg font-semibold">Discover AI Agents</h3>
                 <p className="text-muted-foreground mt-2 mb-4">
                   Search for agents or browse by category to get started.
                 </p>
-                <Button 
+                <Button
                   onClick={() => setSearchQuery("chatbot")}
                   variant="outline"
                   size="sm"
@@ -159,8 +187,10 @@ const AgentsPage: NextPageWithLayout = () => {
       </div>
     </div>
   );
-};
+}
 
-AgentsPage.getLayout = (page) => <AppLayout>{page}</AppLayout>;
+AgentsPage.getLayout = (page: ReactElement) => {
+  return <Layout>{page}</Layout>;
+};
 
 export default AgentsPage;

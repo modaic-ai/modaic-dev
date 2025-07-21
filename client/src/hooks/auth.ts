@@ -14,7 +14,7 @@ type BackendRegisterRequest = {
 type BackendRegisterResponse = {
   message: string;
   userId: string;
-  webId: string;
+  repoId: string;
   email: string;
   username: string;
 };
@@ -50,7 +50,7 @@ export function useSubmitRegister() {
         localStorage.removeItem("returnTo");
         window.location.href = returnTo;
       } else {
-        window.location.href = `/auth/onboarding?email=${encodeURIComponent(data.email)}&username=${encodeURIComponent(data.username)}&isGoogleSignup=false&defaultWebId=${data.webId}`;
+        window.location.href = `/auth/onboarding?email=${encodeURIComponent(data.email)}&username=${encodeURIComponent(data.username)}&isGoogleSignup=false&defaultRepoId=${data.repoId}`;
       }
     },
     onError: (error: AxiosError) => {

@@ -1,6 +1,6 @@
 import { useState, useEffect, ReactElement } from "react";
 import Head from "next/head";
-import PublicLayout from "@/layouts/PublicLayout";
+import { AuthLayout } from "@/layouts/PublicLayout";
 import { AuthHeader } from "@/components/auth/auth-header";
 import { EmailStepForm } from "@/components/auth/email-step-form";
 import { LoginForm } from "@/components/auth/login-form";
@@ -14,13 +14,13 @@ import { useCheckEmailExists } from "@/hooks/user";
 import { useSubmitRegister } from "@/hooks/auth";
 import { useUser } from "@/providers/user-provider";
 
-const emailSchema = z.object({ email: z.string().email() });
+const emailSchema = z.object({ email: z.email() });
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(6),
 });
 const registerSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   username: z
     .string()
     .min(6)
@@ -86,7 +86,7 @@ function AuthPage() {
           localStorage.removeItem("returnTo");
           window.location.href = returnTo;
         } else {
-          window.location.href = `/user/${user?.username}`;
+          window.location.href = `/agents`;
         }
       }
     } catch (err: any) {
@@ -148,6 +148,6 @@ function AuthPage() {
 }
 
 AuthPage.getLayout = (page: ReactElement) => (
-  <PublicLayout>{page}</PublicLayout>
+  <AuthLayout>{page}</AuthLayout>
 );
 export default AuthPage;

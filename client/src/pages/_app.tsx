@@ -9,12 +9,11 @@ import { createStytchUIClient } from "@stytch/nextjs/ui";
 import { environment } from "@/environment";
 import { Analytics } from "@vercel/analytics/react";
 import { toast } from "sonner";
-import AppLayout from "@/layouts/AppLayout";
 import { handleLinkedInWebView } from "@/lib/utils";
 import { Toaster as SonnerToaster } from "sonner";
 import Head from "next/head";
 import { ThemeProvider } from "@/providers/theme-proivder";
-import PublicLayout from "@/layouts/PublicLayout";
+import { Layout } from "@/layouts/PublicLayout";
 import { UserProvider } from "@/providers/user-provider";
 
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
@@ -41,7 +40,7 @@ const stytch = createStytchUIClient(environment.stytch_public_token as string, {
 
 export default function App({ Component, pageProps }: AppPropsWithLayout) {
   const getLayout =
-    Component.getLayout || ((page) => <PublicLayout>{page}</PublicLayout>);
+    Component.getLayout || ((page) => <Layout>{page}</Layout>);
   const [isOnline, setIsOnline] = useState(true);
   const [toastId, setToastId] = useState<any>(null);
   useEffect(() => {

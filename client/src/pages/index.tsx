@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import PublicLayout from "@/layouts/PublicLayout";
+import { LandingPageLayout } from "@/layouts/PublicLayout";
 import { ReactElement } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -215,14 +215,14 @@ function Home() {
   const router = useRouter();
 
   return (
-    <div className="relative w-full min-h-screen">
+    <div className="relative w-full">
       {/* ASCII Water Background */}
       <div className="absolute inset-0 w-full h-full">
         <WaterAscii />
       </div>
 
       {/* Content Overlay */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
+      <div className="relative z-10 flex flex-col items-center justify-center p-6">
         <div className="flex flex-col items-center gap-8 w-full mx-auto">
           <div className="max-w-xl text-8xl font-bold">
             <div className="text-8xl text-center text-foreground font-grotesk uppercase">
@@ -244,7 +244,7 @@ function Home() {
 }
 
 Home.getLayout = (page: ReactElement) => {
-  return <PublicLayout>{page}</PublicLayout>;
+  return <LandingPageLayout>{page}</LandingPageLayout>;
 };
 
 export default Home;
