@@ -21,7 +21,7 @@ export function Navbar() {
     <NavigationMenu className="py-2 justify-between px-16 border-b border-b-[0.5px]" viewport={false}>
       <NavigationMenuList>
         <NavigationMenuItem className="flex items-center">
-          <NavigationMenuTrigger hideChevron>
+          <NavigationMenuLink href="/">
             <div className="flex gap-2 items-center -ml-1 justify-center h-full rounded-full">
               <Image
                 src={"/mosaicnobg.png"}
@@ -37,19 +37,19 @@ export function Navbar() {
                 </span>
               </div>
             </div>
-          </NavigationMenuTrigger>
+          </NavigationMenuLink>
         </NavigationMenuItem>
       </NavigationMenuList>
       <NavigationMenuList>
         <NavigationMenuItem>
-          <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-            <Link href="/agents">Agents</Link>
+          <NavigationMenuLink href="/agents" className={navigationMenuTriggerStyle()}>
+            Agents
           </NavigationMenuLink>
         </NavigationMenuItem>
 
         <NavigationMenuItem>
-          <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-            <Link href="/docs">Docs</Link>
+          <NavigationMenuLink href="/docs" className={navigationMenuTriggerStyle()}>
+            Docs
           </NavigationMenuLink>
         </NavigationMenuItem>
         <NavigationMenuItem>
@@ -88,19 +88,19 @@ export function Navbar() {
           </NavigationMenuContent>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-            <Link href="/login">Login</Link>
+          <NavigationMenuLink href="/auth" className={navigationMenuTriggerStyle()}>
+            Login
           </NavigationMenuLink>
         </NavigationMenuItem>
         <NavigationMenuItem>
           <NavigationMenuLink
-            asChild
+            href="/auth"
             className={cn(
               navigationMenuTriggerStyle(),
               "dark:bg-foreground dark:text-background hover:opacity-75 transition-all duration-200 ease-in-out"
             )}
           >
-            <Link href="/join">Sign Up</Link>
+            Sign Up
           </NavigationMenuLink>
         </NavigationMenuItem>
       </NavigationMenuList>
@@ -108,22 +108,4 @@ export function Navbar() {
   );
 }
 
-function ListItem({
-  title,
-  children,
-  href,
-  ...props
-}: React.ComponentPropsWithoutRef<"li"> & { href: string }) {
-  return (
-    <li {...props}>
-      <NavigationMenuLink asChild>
-        <Link href={href}>
-          <div className="text-sm leading-none font-medium">{title}</div>
-          <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">
-            {children}
-          </p>
-        </Link>
-      </NavigationMenuLink>
-    </li>
-  );
-}
+

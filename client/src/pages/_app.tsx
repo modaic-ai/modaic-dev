@@ -15,6 +15,7 @@ import { Toaster as SonnerToaster } from "sonner";
 import Head from "next/head";
 import { ThemeProvider } from "@/providers/theme-proivder";
 import PublicLayout from "@/layouts/PublicLayout";
+import { UserProvider } from "@/providers/user-provider";
 
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -84,16 +85,16 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
     <StytchProvider stytch={stytch}>
       <QueryClientProvider client={queryClient}>
         <Head>
-          <title>The Future is Modular</title>
+          <title>The AI Application Platform | Modaic</title>
           <meta
             name="description"
-            content="Everything is computerized, but not everything is computerized."
+            content="The internet wasn't made for AI. The new era of software requires bottom-up infrastructure to build lasting AI solutions."
           />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta property="og:title" content="The Future is Modular" />
           <meta
             property="og:description"
-            content="Everything is computerized, but not everything is computerized."
+            content="The internet wasn't made for AI. The new era of software requires bottom-up infrastructure to build lasting AI solutions."
           />
           <meta property="og:image" content="/opengraph-image.jpg" />
           <meta property="og:url" content="https://modaic.dev" />
@@ -107,7 +108,7 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
           enableSystem
           disableTransitionOnChange
         >
-          <div className={fontSans.className}>
+          <UserProvider>
             {getLayout(
               <>
                 <Analytics />
@@ -117,7 +118,8 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
                 </div>
               </>
             )}
-          </div>
+          </UserProvider>
+          <div className={fontSans.className}></div>
         </ThemeProvider>
       </QueryClientProvider>
     </StytchProvider>
