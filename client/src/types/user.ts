@@ -8,6 +8,9 @@ export type UserModel = {
     imageKey: string | null;
     fullName: string | null;
     profilePictureUrl: string | null;
+    giteaUserId: number | null;
+    giteaTokenEncrypted: string | null;
+    apiKey: string | null;
 };
 
 export type CreateUserRequest = {
