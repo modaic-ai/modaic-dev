@@ -18,11 +18,11 @@ import { cn } from "@/lib/utils";
 
 export function Navbar() {
   return (
-    <NavigationMenu className="py-2 justify-between " viewport={false}>
+    <NavigationMenu className="py-2 justify-between px-16 border-b border-b-[0.5px]" viewport={false}>
       <NavigationMenuList>
         <NavigationMenuItem className="flex items-center">
           <NavigationMenuTrigger hideChevron>
-            <div className="flex gap-2 items-center justify-center h-full rounded-full">
+            <div className="flex gap-2 items-center -ml-1 justify-center h-full rounded-full">
               <Image
                 src={"/mosaicnobg.png"}
                 alt="logo"
@@ -33,7 +33,7 @@ export function Navbar() {
               />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold text-2xl tracking-tighter">
-                  Modaic
+                  modaic
                 </span>
               </div>
             </div>

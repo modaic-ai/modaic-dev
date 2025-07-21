@@ -84,19 +84,19 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
     <StytchProvider stytch={stytch}>
       <QueryClientProvider client={queryClient}>
         <Head>
-          <title>Modaic</title>
+          <title>The Future is Modular</title>
           <meta
             name="description"
             content="Everything is computerized, but not everything is computerized."
           />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <meta property="og:title" content="Modaic: The Art of the Game" />
+          <meta property="og:title" content="The Future is Modular" />
           <meta
             property="og:description"
             content="Everything is computerized, but not everything is computerized."
           />
           <meta property="og:image" content="/opengraph-image.jpg" />
-          <meta property="og:url" content="https://www.modaic.dev" />
+          <meta property="og:url" content="https://modaic.dev" />
           <meta property="og:type" content="website" />
           <link rel="icon" href="/favicon.ico" />
           <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
