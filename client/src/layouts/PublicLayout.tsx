@@ -8,9 +8,9 @@ function PublicLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     <div className={cn("bg-background font-sans antialiased")}>
       <div className="relative max-w-[1440px] mx-auto">
         <Navbar />
-        <main className="flex min-h-screen ">
+        <main className="flex min-h-screen">
           <aside className="w-1/4 dark:bg-muted-background border-r-1"></aside>
-          <div className="flex-1 px-6 py-12">{children}</div>
+          <div className="flex-1 px-6 pt-24">{children}</div>
         </main>
         <Footer />
       </div>
@@ -42,7 +42,7 @@ function LandingPageLayout({
     <div className={cn("min-h-screen bg-background font-sans antialiased")}>
       <div className="relative max-w-[1440px] mx-auto">
         <Navbar />
-        <main className="flex items-center justify-center min-h-[80dvh]">
+        <main className="flex items-center justify-center min-h-[90dvh]">
           <div>{children}</div>
         </main>
         <Footer />

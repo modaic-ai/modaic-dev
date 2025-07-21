@@ -18,94 +18,106 @@ import { cn } from "@/lib/utils";
 
 export function Navbar() {
   return (
-    <NavigationMenu className="py-2 justify-between px-16 border-b border-b-[0.5px]" viewport={false}>
-      <NavigationMenuList>
-        <NavigationMenuItem className="flex items-center">
-          <NavigationMenuLink href="/">
-            <div className="flex gap-2 items-center -ml-1 justify-center h-full rounded-full">
-              <Image
-                src={"/mosaicnobg.png"}
-                alt="logo"
-                width={36}
-                height={36}
-                className="rounded-full hover:animate-spin-slow"
-                priority
-              />
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold text-2xl tracking-tighter">
-                  modaic
-                </span>
+    <div className="fixed bg-background top-0 left-0 right-0 z-50">
+      <NavigationMenu
+        className="py-2 justify-between px-16 border-b border-b-[0.5px]"
+        viewport={false}
+      >
+        <NavigationMenuList>
+          <NavigationMenuItem className="flex items-center">
+            <NavigationMenuLink href="/">
+              <div className="flex gap-2 items-center -ml-1 justify-center h-full rounded-full">
+                <Image
+                  src={"/mosaicnobg.png"}
+                  alt="logo"
+                  width={36}
+                  height={36}
+                  className="rounded-full hover:animate-spin-slow"
+                  priority
+                />
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold text-2xl tracking-tighter">
+                    modaic
+                  </span>
+                </div>
               </div>
-            </div>
-          </NavigationMenuLink>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-      <NavigationMenuList>
-        <NavigationMenuItem>
-          <NavigationMenuLink href="/agents" className={navigationMenuTriggerStyle()}>
-            Agents
-          </NavigationMenuLink>
-        </NavigationMenuItem>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+        </NavigationMenuList>
+        <NavigationMenuList>
+          <NavigationMenuItem>
+            <NavigationMenuLink
+              href="/agents"
+              className={navigationMenuTriggerStyle()}
+            >
+              Agents
+            </NavigationMenuLink>
+          </NavigationMenuItem>
 
-        <NavigationMenuItem>
-          <NavigationMenuLink href="/docs" className={navigationMenuTriggerStyle()}>
-            Docs
-          </NavigationMenuLink>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <NavigationMenuTrigger hideChevron>
-            <List size={16} />
-          </NavigationMenuTrigger>
-          <NavigationMenuContent>
-            <ul className="grid w-[200px] gap-4">
-              <li>
-                <NavigationMenuLink className="rounded-md" asChild>
-                  <Link href="#">
-                    <div className="font-medium">Components</div>
-                    <div className="text-muted-foreground">
-                      Browse all components in the library.
-                    </div>
-                  </Link>
-                </NavigationMenuLink>
-                <NavigationMenuLink className="rounded-md" asChild>
-                  <Link href="#">
-                    <div className="font-medium">Documentation</div>
-                    <div className="text-muted-foreground">
-                      Learn how to use the library.
-                    </div>
-                  </Link>
-                </NavigationMenuLink>
-                <NavigationMenuLink className="rounded-md" asChild>
-                  <Link href="#">
-                    <div className="font-medium">Blog</div>
-                    <div className="text-muted-foreground">
-                      Read our latest blog posts.
-                    </div>
-                  </Link>
-                </NavigationMenuLink>
-              </li>
-            </ul>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <NavigationMenuLink href="/auth" className={navigationMenuTriggerStyle()}>
-            Login
-          </NavigationMenuLink>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <NavigationMenuLink
-            href="/auth"
-            className={cn(
-              navigationMenuTriggerStyle(),
-              "dark:bg-foreground dark:text-background hover:opacity-75 transition-all duration-200 ease-in-out"
-            )}
-          >
-            Sign Up
-          </NavigationMenuLink>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
+          <NavigationMenuItem>
+            <NavigationMenuLink
+              href="/docs"
+              className={navigationMenuTriggerStyle()}
+            >
+              Docs
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <NavigationMenuTrigger hideChevron>
+              <List size={16} />
+            </NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <ul className="grid w-[200px] gap-4">
+                <li>
+                  <NavigationMenuLink className="rounded-md" asChild>
+                    <Link href="#">
+                      <div className="font-medium">Components</div>
+                      <div className="text-muted-foreground">
+                        Browse all components in the library.
+                      </div>
+                    </Link>
+                  </NavigationMenuLink>
+                  <NavigationMenuLink className="rounded-md" asChild>
+                    <Link href="#">
+                      <div className="font-medium">Documentation</div>
+                      <div className="text-muted-foreground">
+                        Learn how to use the library.
+                      </div>
+                    </Link>
+                  </NavigationMenuLink>
+                  <NavigationMenuLink className="rounded-md" asChild>
+                    <Link href="#">
+                      <div className="font-medium">Blog</div>
+                      <div className="text-muted-foreground">
+                        Read our latest blog posts.
+                      </div>
+                    </Link>
+                  </NavigationMenuLink>
+                </li>
+              </ul>
+            </NavigationMenuContent>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <NavigationMenuLink
+              href="/auth"
+              className={navigationMenuTriggerStyle()}
+            >
+              Login
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <NavigationMenuLink
+              href="/auth"
+              className={cn(
+                navigationMenuTriggerStyle(),
+                "dark:bg-foreground dark:text-background hover:opacity-75 transition-all duration-200 ease-in-out"
+              )}
+            >
+              Sign Up
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+        </NavigationMenuList>
+      </NavigationMenu>
+    </div>
   );
 }
-
-

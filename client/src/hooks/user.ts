@@ -53,7 +53,7 @@ export function useFetchUserByUsername(username?: string | null) {
     queryKey: ["user", username],
     queryFn: async () => {
       if (!username) return null;
-      const response = await api.get(`/users/username/${username}`);
+      const response = await api.get(`/user/username/${username}`);
       const data = await response.data.result;
       return data;
     },
@@ -80,10 +80,10 @@ export function useUpdateUser() {
 export function useCheckEmailExists() {
   return useMutation({
     mutationFn: async (email: string) => {
-      const response = await api.get(`/users/check/email/`, {
+      const response = await api.get(`/user/check/email/`, {
         params: { email },
       });
-      const data = await response.data.result;
+      const data = response.data.exists;
       return data;
     },
     onError: (err: any) => {
@@ -97,7 +97,7 @@ export function usePinRepo(repoId: string, userId: string | null) {
   return useMutation({
     mutationFn: async () => {
       if (!userId) return;
-      const response = await api.patch(`/users/pin/repo/${repoId}`);
+      const response = await api.patch(`/user/pin/repo/${repoId}`);
       const data = await response.data.result;
       return data;
     },
@@ -116,7 +116,7 @@ export function useUnpinRepo(repoId: string, userId?: string | null) {
   return useMutation({
     mutationFn: async () => {
       if (!userId) return;
-      const response = await api.patch(`/users/unpin/repo/${repoId}`);
+      const response = await api.patch(`/user/unpin/repo/${repoId}`);
       const data = await response.data.result;
       return data;
     },
@@ -130,7 +130,7 @@ export function useFetchPinnedRepos(userId?: string | null) {
   return useQuery({
     queryKey: ["user", "pinned", "repos", userId],
     queryFn: async () => {
-      const response = await api.get(`/users/pinned/repos/${userId}`);
+      const response = await api.get(`/user/pinned/repos/${userId}`);
       const data = await response.data.result;
       return data;
     },
@@ -141,7 +141,7 @@ export function useFetchPinnedRepos(userId?: string | null) {
 export function useUnsaveRepo(repoId: string | null) {
   return useMutation({
     mutationFn: async () => {
-      const response = await api.patch(`/users/unsave/repo/${repoId}`);
+      const response = await api.patch(`/user/unsave/repo/${repoId}`);
       const data = await response.data.result;
       return data;
     },
@@ -155,7 +155,7 @@ export function useFetchSavedRepos(userId?: string | null) {
   return useQuery({
     queryKey: ["user", "saved", "repos"],
     queryFn: async () => {
-      const response = await api.get(`/users/saved/repos/${userId}`);
+      const response = await api.get(`/user/saved/repos/${userId}`);
       const data = await response.data.result;
       return data;
     },

@@ -49,8 +49,8 @@ const WaterAscii: React.FC = () => {
   const [frame, setFrame] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const characters = "~≈≋⋿⊰⊱◟◝";
-  const rows = 50;
-  const cols = 100;
+  const rows = 70;
+  const cols = 120;
 
   // Pre-calculate constants
   const centerPos = { x: 0.5, y: 0.5 };
@@ -164,7 +164,7 @@ const WaterAscii: React.FC = () => {
 
   const innerContainerStyle = useMemo(
     () => ({
-      padding: "30px",
+      padding: "0px",
       position: "relative" as const,
       width: "100%",
       height: "100%",
@@ -215,7 +215,7 @@ function Home() {
   const router = useRouter();
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full h-full border rounded-lg overflow-hidden">
       {/* ASCII Water Background */}
       <div className="absolute inset-0 w-full h-full">
         <WaterAscii />

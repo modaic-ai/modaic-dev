@@ -1,5 +1,5 @@
 import { ReactElement, useCallback, useEffect, useRef, useState } from "react";
-import PublicLayout from "@/layouts/PublicLayout";
+import { AuthLayout } from "@/layouts/PublicLayout";
 import { useStytch } from "@stytch/nextjs";
 import { useCompleteOauth } from "@/hooks/auth";
 import { toast } from "sonner";
@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import { LoaderIcon } from "lucide-react";
 import { useUser } from "@/providers/user-provider";
 
-export const SESSION_MINUTES = 10080;
+export const SESSION_MINUTES = 10077;
 
 const GoogleCallback = () => {
   const client = useStytch();
@@ -108,7 +108,7 @@ const GoogleCallback = () => {
 };
 
 GoogleCallback.getLayout = (page: ReactElement) => {
-  return <PublicLayout>{page}</PublicLayout>;
+  return <AuthLayout>{page}</AuthLayout>;
 };
 
 export default GoogleCallback;
