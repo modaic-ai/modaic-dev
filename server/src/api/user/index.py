@@ -1,7 +1,8 @@
 from src.service.index import *
 from src.models.index import *
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.exceptions import HTTPException
+from src.api.auth.utils import manager
 from fastapi.responses import JSONResponse
 
 router = APIRouter()
@@ -17,7 +18,9 @@ def get_user(userId: str):
 
 
 @router.put("/{userId}")
-def update_user(userId: str, request: UpdateUserRequest):
+def update_user(
+    userId: str, request: UpdateUserRequest, user: UserModel = Depends(manager.required)
+):
     try:
         update_user_request = UpdateUserRequest(userId=userId, **request.model_dump())
         result = user_service.update_user(update_user_request)
@@ -27,9 +30,36 @@ def update_user(userId: str, request: UpdateUserRequest):
 
 
 @router.delete("/{userId}")
-def delete_user(userId: str):
+def delete_user(userId: str, user: UserModel = Depends(manager.required)):
     try:
         deleted_user_id = user_service.delete_user(DeleteUserRequest(userId=userId))
         return JSONResponse(content={"result": deleted_user_id})
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/me/api-key")
+def get_api_key(user: UserModel = Depends(manager.required)):
+    """Get user's API key for SDK access"""
+    try:
+        if not user.apiKey:
+            raise HTTPException(status_code=404, detail="API key not found")
+
+        return JSONResponse(content={"apiKey": user.apiKey, "username": user.username})
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/me/api-key/regenerate")
+def regenerate_api_key(user: UserModel = Depends(manager.required)):
+    """Regenerate user's API key"""
+    try:
+        new_api_key = user_service.regenerate_api_key(user.userId)
+        return JSONResponse(
+            content={
+                "apiKey": new_api_key,
+                "message": "API key regenerated successfully",
+            }
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

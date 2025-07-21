@@ -3,7 +3,14 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from src.db.index import lifespan
-from src.api.index import repo_router, user_router, auth_router, contributor_router
+from src.api.index import (
+    repo_router,
+    user_router,
+    auth_router,
+    contributor_router,
+    webhook_router,
+    agent_router,
+)
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
@@ -33,6 +40,8 @@ app.include_router(repo_router, prefix="/repo")
 app.include_router(user_router, prefix="/user")
 app.include_router(auth_router, prefix="/auth")
 app.include_router(contributor_router, prefix="/contributor")
+app.include_router(webhook_router, prefix="/webhooks")
+app.include_router(agent_router, prefix="/agents")
 
 
 @app.get("/")

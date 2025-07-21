@@ -216,7 +216,7 @@ def register(registerRequest: RegisterRequest, background_tasks: BackgroundTasks
             )
         except Exception as e:
             logger.error(f"Error creating default web: {str(e)}")
-            # If web creation fails, we should still return success for user creation
+            # if web creation fails, we should still return success for user creation
             # but log the error for investigation
 
         response_content = {
@@ -226,14 +226,14 @@ def register(registerRequest: RegisterRequest, background_tasks: BackgroundTasks
             "email": registerRequest.email,
         }
 
-        # Only include repoId if it was successfully created
+        # only include repoId if it was successfully created
         if repoId:
             response_content["repoId"] = repoId
 
         return JSONResponse(content=response_content)
 
     except HTTPException:
-        # Re-raise HTTP exceptions as-is
+        # re-raise HTTP exceptions as-is
         raise
     except Exception as e:
         logger.error(f"Unexpected error in register endpoint: {str(e)}")

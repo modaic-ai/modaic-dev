@@ -16,6 +16,9 @@ class UserModel(BaseModel):
     imageKey: Optional[str] = None
     fullName: Optional[str] = None
     profilePictureUrl: Optional[str] = None
+    giteaUserId: Optional[int] = None
+    giteaTokenEncrypted: Optional[str] = None
+    apiKey: Optional[str] = None
 
 
 class CreateUserRequest(BaseModel):
@@ -49,6 +52,7 @@ class PublicUserModel(BaseModel):
     imageKey: Optional[str] = None
     fullName: Optional[str] = None
     profilePictureUrl: Optional[str] = None
+    giteaUserId: Optional[int] = None
 
     model_config = ConfigDict(extra="ignore")
 

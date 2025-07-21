@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     next_url: str
     s3_bucket_name: str
     cloudfront_domain: str
+    gittea_url: str
+    gittea_admin_token: str
+    gittea_webhook_secret: str
 
     class Config:
         env_file = f".env"
