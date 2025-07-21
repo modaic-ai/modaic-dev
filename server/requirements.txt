@@ -11,3 +11,4 @@ dspy
 black
 pytz
 boto3
+werkzeug

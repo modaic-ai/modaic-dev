@@ -70,10 +70,10 @@ async def search_agents(
             search_filter["tags"] = {"$in": tag_list}
         
         # Execute search
-        agents_cursor = Agents.find(search_filter).limit(limit)
+        agents_cursor = list(Agents.find(search_filter).limit(limit))
         agents = []
         
-        async for agent_doc in agents_cursor:
+        for agent_doc in agents_cursor:
             agent = PublicAgentModel(**agent_doc)
             agents.append(agent.model_dump())
         
