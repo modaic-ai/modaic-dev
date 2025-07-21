@@ -63,3 +63,13 @@ def regenerate_api_key(user: UserModel = Depends(manager.required)):
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/check/email/")
+def check_email(email: str):
+    """Check if a user exists with the given email"""
+    try:
+        exists = user_service.email_exists(email)
+        return {"exists": exists}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

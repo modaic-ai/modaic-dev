@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from pytz import UTC
 from typing import Optional, List, Dict, Any
 from src.db.mongo import get_collection
+from src.utils.date import now
 
 Agents = get_collection("agents")
 
@@ -17,9 +17,9 @@ class AgentModel(BaseModel):
     readmeContent: str = ""
     tags: List[str] = []
     version: str = "1.0.0"
-    lastMirrored: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    created: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    lastMirrored: str = Field(default_factory=lambda: now())
+    created: str = Field(default_factory=lambda: now())
+    updated: str = Field(default_factory=lambda: now())
 
 
 class CreateAgentRequest(BaseModel):
@@ -39,6 +39,7 @@ class UpdateAgentRequest(BaseModel):
     readmeContent: Optional[str] = None
     tags: Optional[List[str]] = None
     version: Optional[str] = None
+    updated: str = Field(default_factory=lambda: now())
 
 
 class PublicAgentModel(BaseModel):
@@ -50,6 +51,6 @@ class PublicAgentModel(BaseModel):
     readmeContent: str
     tags: List[str]
     version: str
-    created: datetime
-    updated: datetime
-    lastMirrored: datetime
+    created: str
+    updated: str
+    lastMirrored: str

@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
-from pytz import UTC
 from typing import Optional
 from src.db.mongo import get_collection
+from src.utils.date import now
 
 Users = get_collection("users")
 
@@ -11,8 +11,8 @@ class UserModel(BaseModel):
     userId: str
     username: str
     email: str
-    created: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created: str = Field(default_factory=lambda: now())
+    updated: str = Field(default_factory=lambda: now())
     imageKey: Optional[str] = None
     fullName: Optional[str] = None
     profilePictureUrl: Optional[str] = None
@@ -37,6 +37,7 @@ class UpdateUserRequest(BaseModel):
     imageKey: Optional[str] = None
     fullName: Optional[str] = None
     profilePictureUrl: Optional[str] = None
+    updated: str = Field(default_factory=lambda: now())
 
 
 class DeleteUserRequest(BaseModel):
@@ -47,8 +48,8 @@ class PublicUserModel(BaseModel):
     userId: str
     username: str
     email: str
-    created: datetime
-    updated: datetime
+    created: str
+    updated: str
     imageKey: Optional[str] = None
     fullName: Optional[str] = None
     profilePictureUrl: Optional[str] = None

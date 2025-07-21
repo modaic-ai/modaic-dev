@@ -40,7 +40,7 @@ class GitteaClient:
             "username": username,
             "email": email,
             "password": password,
-            "full_name": full_name or username,
+            "full_name": full_name,
             "must_change_password": False,
             "send_notify": False,
         }

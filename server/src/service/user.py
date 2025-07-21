@@ -1,7 +1,7 @@
 from src.models.index import *
 from src.lib.gittea import gitea_client
 from src.lib.logger import logger
-import uuid
+from src.utils.date import now
 import secrets
 from typing import Union
 
@@ -29,8 +29,8 @@ class UserService:
                 userId=request.userId,
                 username=request.username,
                 email=request.email,
-                created=datetime.now(UTC),
-                updated=datetime.now(UTC),
+                created=now(),
+                updated=now(),
                 imageKey=request.imageKey,
                 fullName=request.fullName,
                 profilePictureUrl=request.profilePictureUrl,
@@ -49,8 +49,8 @@ class UserService:
                 userId=request.userId,
                 username=request.username,
                 email=request.email,
-                created=datetime.now(UTC),
-                updated=datetime.now(UTC),
+                created=now(),
+                updated=now(),
                 imageKey=request.imageKey,
                 fullName=request.fullName,
                 profilePictureUrl=request.profilePictureUrl,
@@ -70,16 +70,11 @@ class UserService:
         return token
 
     def update_user(self, request: UpdateUserRequest) -> UserModel:
-        user = UserModel(
-            userId=request.userId,
-            username=request.username,
-            email=request.email,
-            imageKey=request.imageKey,
-        )
+        updates = request.model_dump(exclude_none=True)
         Users.update_one(
-            {"userId": request.userId}, {"$set": user.model_dump(exclude_none=True)}
+            {"userId": request.userId}, {"$set": updates}
         )
-        return user
+        return UserModel(**Users.find_one({"userId": request.userId}))
 
     def delete_user(self, request: DeleteUserRequest) -> str:
         Users.delete_one({"userId": request.userId})
@@ -100,6 +95,11 @@ class UserService:
         )
         logger.info(f"Regenerated API key for user: {user_id}")
         return new_api_key
+
+    def email_exists(self, email: str) -> bool:
+        """Check if a user exists with the given email"""
+        user = Users.find_one({"email": email})
+        return user is not None
 
 
 user_service = UserService()

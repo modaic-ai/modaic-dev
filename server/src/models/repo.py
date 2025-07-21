@@ -2,9 +2,9 @@ from pydantic import BaseModel
 from datetime import datetime
 from pydantic import Field
 from pydantic import ConfigDict
-from pytz import UTC
 from typing import Literal, Optional, List
 from src.db.mongo import get_collection
+from src.utils.date import now
 
 Repos = get_collection("repos")
 Visibility = Literal["private", "public"]
@@ -15,8 +15,8 @@ class RepoModel(BaseModel):
     name: str
     description: str
     adminId: str  # reference to the user who created it for now
-    created: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created: str = Field(default_factory=lambda: now())
+    updated: str = Field(default_factory=lambda: now())
     visibility: Visibility = "private"
     stars: int = 0
     forks: int = 0
@@ -48,8 +48,8 @@ class PublicRepoModel(BaseModel):  # what other people are allowed to see
     description: str
     visibility: Visibility
     adminId: str
-    created: datetime
-    updated: datetime
+    created: str
+    updated: str
     stars: int
     forks: int
     imageKeys: List[str]

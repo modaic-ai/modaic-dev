@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, Literal
 from datetime import datetime
-from pytz import UTC
+from src.utils.date import now
 from src.db.mongo import get_collection
 
 Contributors = get_collection("contributors")
@@ -14,8 +14,8 @@ class Contributor(BaseModel):
     email: str
     repoId: str
     accessLevel: Literal["read", "write", "admin"] = "read"
-    invitedAt: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    acceptedAt: Optional[datetime] = None
+    invitedAt: str = Field(default_factory=lambda: now())
+    acceptedAt: Optional[str] = None
     pending: bool = True
     invitedBy: str
 

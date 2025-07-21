@@ -208,33 +208,20 @@ def register(registerRequest: RegisterRequest, background_tasks: BackgroundTasks
                     status_code=500, detail="Failed to create default web"
                 )
 
-            # send account creation email in the background
-            background_tasks.add_task(
-                email_service.account_creation,
-                recipient_email=registerRequest.email,
-                recipient_name=registerRequest.fullName or registerRequest.username,
-            )
         except Exception as e:
             logger.error(f"Error creating default web: {str(e)}")
-            # if web creation fails, we should still return success for user creation
+            # if repo creation fails, we should still return success for user creation
             # but log the error for investigation
 
-        response_content = {
+        response = {
             "message": "Welcome to Modaic!",
             "userId": userId,
             "username": registerRequest.username,
             "email": registerRequest.email,
         }
 
-        # only include repoId if it was successfully created
-        if repoId:
-            response_content["repoId"] = repoId
-
-        return JSONResponse(content=response_content)
-
-    except HTTPException:
-        # re-raise HTTP exceptions as-is
-        raise
+        return JSONResponse(content=response)
+        
     except Exception as e:
         logger.error(f"Unexpected error in register endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
