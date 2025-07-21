@@ -63,7 +63,7 @@ class GitteaClient:
 
         logger.info(f"Creating repository: {owner}/{repo_name}")
 
-        # Use user's token if available, otherwise admin creates it
+        # use user's token if available, otherwise admin creates it
         endpoint = f"/user/repos"
         return self._make_request("POST", endpoint, json=repo_data)
 
@@ -133,5 +133,4 @@ class GitteaClient:
             return None
 
 
-# Global client instance
 gitea_client = GitteaClient()

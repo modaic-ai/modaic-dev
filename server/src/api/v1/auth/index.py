@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 from fastapi import BackgroundTasks
 from fastapi import APIRouter
-from src.api.auth.utils import manager
+from src.api.v1.auth.utils import manager
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from src.core.config import settings

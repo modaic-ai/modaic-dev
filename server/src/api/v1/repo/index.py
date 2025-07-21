@@ -9,7 +9,7 @@ from fastapi.exceptions import HTTPException
 from botocore.exceptions import ClientError
 from werkzeug.utils import secure_filename
 from src.models.index import Contributors
-from src.api.auth.utils import manager
+from src.api.v1.auth.utils import manager
 from src.models.index import (
     Repos,
     RepoModel,
@@ -21,7 +21,6 @@ from src.models.index import (
 from src.lib.logger import logger
 from src.lib.s3 import s3_client
 from src.core.config import settings
-from src.lib.stytch import client as stytch_client
 from src.service.repo import repo_service
 
 router = APIRouter()

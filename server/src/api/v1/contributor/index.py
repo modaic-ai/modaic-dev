@@ -1,7 +1,7 @@
 from typing import Literal, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from src.models.index import UserModel, PublicUserModel
-from src.api.auth.utils import manager
+from src.api.v1.auth.utils import manager
 from src.lib.logger import logger
 from src.models.index import Repos, Contributors, Contributor, Users, RepoModel
 from pydantic import BaseModel

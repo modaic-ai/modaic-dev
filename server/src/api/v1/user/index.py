@@ -2,7 +2,7 @@ from src.service.index import *
 from src.models.index import *
 from fastapi import APIRouter, Depends
 from fastapi.exceptions import HTTPException
-from src.api.auth.utils import manager
+from src.api.v1.auth.utils import manager
 from fastapi.responses import JSONResponse
 
 router = APIRouter()

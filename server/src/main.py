@@ -36,12 +36,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(repo_router, prefix="/repo")
-app.include_router(user_router, prefix="/user")
-app.include_router(auth_router, prefix="/auth")
-app.include_router(contributor_router, prefix="/contributor")
-app.include_router(webhook_router, prefix="/webhooks")
-app.include_router(agent_router, prefix="/agents")
+app.include_router(repo_router, prefix="/api/v1/repo")
+app.include_router(user_router, prefix="/api/v1/user")
+app.include_router(auth_router, prefix="/api/v1/auth")
+app.include_router(contributor_router, prefix="/api/v1/contributor")
+app.include_router(webhook_router, prefix="/api/v1/webhooks")
+app.include_router(agent_router, prefix="/api/v1/agents")
 
 
 @app.get("/")
