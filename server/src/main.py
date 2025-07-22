@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from src.db.index import lifespan
+from src.db.pg import Base, engine
 from src.api.index import (
     repo_router,
     user_router,
@@ -21,6 +22,8 @@ app = FastAPI(
     description="A FastAPI application for Modaic",
     version="1.0.0",
 )
+
+Base.metadata.create_all(engine)
 
 
 @asynccontextmanager

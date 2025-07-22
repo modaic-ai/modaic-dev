@@ -1,13 +1,8 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, Literal
-from datetime import datetime
 from src.utils.date import now
-from src.db.mongo import get_collection
 
-Contributors = get_collection("contributors")
-
-
-class Contributor(BaseModel):
+class ContributorSchema(BaseModel):
     contributorId: str
     userId: Optional[str] = None
     username: Optional[str] = None
@@ -19,8 +14,11 @@ class Contributor(BaseModel):
     pending: bool = True
     invitedBy: str
 
+    class Config:
+        orm_mode = True
 
-class PublicContributor(BaseModel):
+
+class PublicContributorSchema(BaseModel):
     contributorId: str
     userId: Optional[str] = None
     username: Optional[str] = None

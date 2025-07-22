@@ -7,16 +7,18 @@ from src.api.v1.auth.utils import manager
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from src.core.config import settings
-from src.models.index import (
-    Users,
-    UserModel,
-    PublicUserModel,
+from src.objects.index import (
+    User,
+    UserSchema,
+    PublicUserSchema,
     CreateUserRequest,
     UpdateUserRequest,
-    CreateRepoRequest,
 )
+from src.db.pg import get_db
+from src.utils.date import now
+from sqlalchemy.orm import Session
 from src.utils.user import generate_username
-from src.service.index import email_service, user_service, repo_service
+from src.service.index import user_service, repo_service
 from src.lib.stytch import client as stytch_client, StytchError
 
 router = APIRouter()
@@ -46,9 +48,10 @@ class CompleteAuthenticationRequest(BaseModel):
 @router.post("/")
 def authenticate(
     auth_request: CompleteAuthenticationRequest,
-    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
 ):
     try:
+
         # extract and validate required fields
         email = auth_request.email
         if not email:
@@ -63,11 +66,12 @@ def authenticate(
         profile_picture_url = auth_request.profilePictureUrl or ""
 
         # find existing user
-        user_doc = Users.find_one({"email": email}, {"_id": 0})
-        user = UserModel(**user_doc) if user_doc else None
-        username = generate_username(email) if not user else user.username
-
-        new_repo_id = None
+        user = db.query(User).filter(User.email == email).first()
+        if user:
+            user = UserSchema(**user)
+            username = user.username
+        else:
+            username = generate_username(email)
 
         if not user:
             # create a new user
@@ -79,64 +83,45 @@ def authenticate(
                 profilePictureUrl=profile_picture_url,
             )
 
-            created_user = user_service.create_user(request=create_user_data)
-            if not created_user:
+            user_to_create = UserSchema(
+                userId=create_user_data.userId,
+                username=create_user_data.username,
+                email=create_user_data.email,
+                imageKey=create_user_data.imageKey,
+                fullName=create_user_data.fullName,
+                profilePictureUrl=create_user_data.profilePictureUrl,
+            )
+
+            db.add(user_to_create)
+            db.commit()
+            db.refresh(user_to_create)
+
+            if not user_to_create:
                 raise HTTPException(status_code=500, detail="Failed to create user")
 
-            # create welcome repo for new user
-            create_repo_data = CreateRepoRequest(
-                name="Welcome to Modaic!",
-                description="This is your first repo! Create a new repo to get started.",
-                visibility="Private",
-                adminId=userId,
-            )
-
-            created_repo = repo_service.create_repo(request=create_repo_data)
-            if not created_repo:
-                raise HTTPException(
-                    status_code=500, detail="Failed to create default repo"
-                )
-
-            new_repo_id = created_repo.repoId
-
-            # send onboarding message in the background when we make modaic business gmail
-            """
-            background_tasks.add_task(
-                email_service.onboarding_message,
-                recipient_email=auth_request.email,
-                recipient_name=auth_request.firstName or username,
-            )
-            """
         else:
             # use existing user's username
             username = user.username
 
         # build redirect URL
-        if new_repo_id:
-            redirect = "/auth/onboarding"
-            params = f"?firstName={first_name}&lastName={last_name}&username={username}&isGoogleSignup=true&defaultRepoId={new_repo_id}"
-        else:
-            redirect = f"/{username}"
-            params = "?src=oauth"
+        redirect = f"/{username}"
+        params = "?src=oauth"
 
         full_redirect_url = f"{settings.next_url}{redirect}{params}"
 
         return JSONResponse(content={"redirect": full_redirect_url, "success": True})
 
-    except HTTPException:
-        # re-raise HTTP exceptions as-is
-        raise
     except Exception as e:
         logger.error(f"Authentication error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/register")
-def register(registerRequest: RegisterRequest, background_tasks: BackgroundTasks):
+def register(registerRequest: RegisterRequest, db: Session = Depends(get_db)):
     """
     Register a new user in the system.
 
-    This endpoint creates a new user in both Stytch and the local MongoDB database,
+    This endpoint creates a new user in both Stytch and the local PostgreSQL database,
     and creates their default repo.
 
     Args:
@@ -159,7 +144,9 @@ def register(registerRequest: RegisterRequest, background_tasks: BackgroundTasks
             raise HTTPException(status_code=400, detail="Stytch user ID is required")
 
         # check for username collision
-        usernameCollision = Users.find_one({"username": registerRequest.username})
+        usernameCollision = (
+            db.query(User).filter(User.username == registerRequest.username).first()
+        )
         if usernameCollision:
             logger.error(f"Username already exists: {registerRequest.username}")
             raise HTTPException(
@@ -168,7 +155,9 @@ def register(registerRequest: RegisterRequest, background_tasks: BackgroundTasks
             )
 
         # check for email collision
-        emailCollision = Users.find_one({"email": registerRequest.email})
+        emailCollision = (
+            db.query(User).filter(User.email == registerRequest.email).first()
+        )
         if emailCollision:
             logger.error(f"Email already exists: {registerRequest.email}")
             raise HTTPException(
@@ -178,40 +167,28 @@ def register(registerRequest: RegisterRequest, background_tasks: BackgroundTasks
 
         userId = registerRequest.stytchUserId
 
-        # create the user in mongo
-        createUserPayload = CreateUserRequest(
+        # create the user in postgres
+        create_user_request = CreateUserRequest(
             userId=userId,
             username=registerRequest.username,
             email=registerRequest.email,
             fullName=registerRequest.fullName,
         )
 
-        created_user = user_service.create_user(request=createUserPayload)
-        if not created_user:
-            raise HTTPException(status_code=500, detail="Failed to create user")
-
-        # create their default repo
-        createRepoPayload = CreateRepoRequest(
-            name="Welcome to Modaic!",
-            description="This is your first repo! Create a new repo to get started.",
-            visibility="Private",
-            adminId=userId,
+        user_to_create = UserSchema(
+            userId=create_user_request.userId,
+            username=create_user_request.username,
+            email=create_user_request.email,
+            fullName=create_user_request.fullName,
         )
 
-        repoId = None
-        try:
-            repo = repo_service.create_repo(request=createRepoPayload)
-            repoId = repo.repoId
-            if not repoId:
-                logger.error("create_repo returned None or falsy value")
-                raise HTTPException(
-                    status_code=500, detail="Failed to create default web"
-                )
+        db.add(user_to_create)
+        db.commit()
+        db.refresh(user_to_create)
 
-        except Exception as e:
-            logger.error(f"Error creating default web: {str(e)}")
-            # if repo creation fails, we should still return success for user creation
-            # but log the error for investigation
+        if not user_to_create:
+            logger.error("Failed to create user")
+            raise HTTPException(status_code=500, detail="Failed to create user")
 
         response = {
             "message": "Welcome to Modaic!",
@@ -221,14 +198,14 @@ def register(registerRequest: RegisterRequest, background_tasks: BackgroundTasks
         }
 
         return JSONResponse(content=response)
-        
+
     except Exception as e:
         logger.error(f"Unexpected error in register endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/me")
-def get_current_user(user: Optional[UserModel] = Depends(manager.optional)):
+def get_current_user(user: Optional[UserSchema] = Depends(manager.optional)):
     """
     Get the current user.
 
@@ -239,7 +216,7 @@ def get_current_user(user: Optional[UserModel] = Depends(manager.optional)):
         return None
 
     try:
-        public_user = PublicUserModel(**user.model_dump())
+        public_user = PublicUserSchema(**user.model_dump())
         logger.debug(f"User found in /auth/me: {public_user.model_dump()}")
         return public_user.model_dump()
 
@@ -261,7 +238,9 @@ class OnboardingPayload(BaseModel):
 
 @router.post("/onboarding")
 def complete_onboarding(
-    onboarding_payload: OnboardingPayload, user: UserModel = Depends(manager.required)
+    onboarding_payload: OnboardingPayload,
+    user: UserSchema = Depends(manager.required),
+    db: Session = Depends(get_db),
 ):
     logger.info(f"user: {user}")
     try:
@@ -273,14 +252,21 @@ def complete_onboarding(
             username=onboarding_payload.username,
         )
 
-        logger.info(f"updates: {updates}")
-        Users.update_one(
-            {"userId": user.userId},
-            {"$set": updates.model_dump(exclude_none=True)},
+        result = (
+            db.query(User)
+            .filter(User.userId == user.userId)
+            .update(updates.model_dump(exclude_none=True))
         )
-        return {"result": True}
+        if result == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        db.commit()
+
+        return {"result": result}
+
     except Exception as e:
-        logger.error(f"Exception in /auth/me: {e}")
+        db.rollback()
+        logger.error(f"Exception in /auth/me: {e}. Database was rolled back!")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 

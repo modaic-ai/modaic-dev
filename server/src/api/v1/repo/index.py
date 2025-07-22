@@ -1,27 +1,29 @@
-import os
 import uuid
 from pytz import UTC
 from datetime import datetime
 from typing import Optional
-from pymongo import ReturnDocument
-from fastapi import APIRouter, Depends, UploadFile, File, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
-from botocore.exceptions import ClientError
-from werkzeug.utils import secure_filename
-from src.models.index import Contributors
+from src.objects.schemas.repo import RepoSchema
 from src.api.v1.auth.utils import manager
-from src.models.index import (
-    Repos,
-    RepoModel,
-    GetRepoRequest,
+from src.objects.index import (
+    Repo,
+    PublicRepoSchema,
+    Contributor,
     CreateRepoRequest,
     UpdateRepoRequest,
-    UserModel,
+    UserSchema,
+    Star,
+    RepoTag,
+    ContributorSchema,
 )
+from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_, desc
+from datetime import datetime
+from src.db.pg import get_db
 from src.lib.logger import logger
 from src.lib.s3 import s3_client
-from src.core.config import settings
-from src.service.repo import repo_service
+from sqlalchemy import func
 
 router = APIRouter()
 
@@ -31,7 +33,8 @@ def get_user_repos(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     criteria: Optional[str] = None,
-    user: UserModel = Depends(manager.required),
+    user: UserSchema = Depends(manager.required),
+    db: Session = Depends(get_db),
 ):
     """
     Retrieve paginated repos belonging to the authenticated user,
@@ -56,7 +59,9 @@ def get_user_repos(
             filter_query["visibility"] = visibility
 
         # query and sort by latest update
-        all_repos = list(Repos.find(filter_query, {"_id": 0}, sort=[("updated", -1)]))
+        all_repos = (
+            db.query(Repo).filter_by(**filter_query).order_by(Repo.updated.desc()).all()
+        )
 
         total_repos = len(all_repos)
         start_index = (page - 1) * page_size
@@ -78,13 +83,18 @@ def get_user_repos(
         raise HTTPException(status_code=500, detail=f"Error fetching user repos {e}")
 
 
+from sqlalchemy import or_, and_, desc
+from datetime import datetime
+
+
 @router.get("/")
 async def get_repos(
     limit: int = 20,
     cursor: str = None,
     visibility: str = None,
     userId: str = None,
-    user_making_request: UserModel = Depends(manager.optional),
+    user_making_request: UserSchema = Depends(manager.optional),
+    db: Session = Depends(get_db),
 ):
     """
     Retrieve repos with optional filtering by visibility, user ID, and cursor-based pagination.
@@ -92,7 +102,7 @@ async def get_repos(
     Args:
         limit (int): Max number of repos to fetch (default: 20).
         cursor (str): ISO timestamp to paginate older updates.
-        visibility (str): Filter by visibility level (e.g., "Public").
+        visibility (str): Filter by visibility level (e.g., "public").
         userId (str): Target user ID to fetch owned or contributed repos.
         user_making_request (User): The user making the request (optional).
 
@@ -100,59 +110,97 @@ async def get_repos(
         dict: A response containing the list of repos, next pagination cursor, and total count.
     """
     try:
-        query = {}
+        # start with base query
+        query = db.query(Repo)
+        count_query = db.query(Repo)
 
         # determine if the requester is the same as the target user
         is_owner = user_making_request and user_making_request.userId == userId
 
+        # build filters list
+        filters = []
+        count_filters = []
+
         # apply visibility filter
         if visibility:
-            query["visibility"] = visibility
+            visibility_filter = Repo.visibility == visibility
+            filters.append(visibility_filter)
+            count_filters.append(visibility_filter)
 
         # filter for user-owned and contributed repos
         if userId:
-            contributions = list(
-                Contributors.find({"userId": userId}, {"repoId": 1, "_id": 0})
+            # get contributed repo IDs
+            contributions = (
+                db.query(Contributor).filter(Contributor.userId == userId).all()
             )
-            contributed_ids = [c["repoId"] for c in contributions]
+            contributed_ids = [c.repoId for c in contributions]
 
-            user_query = {
-                "$or": [{"userId": userId}, {"repoId": {"$in": contributed_ids}}]
-            }
+            # create user ownership/contribution filter
+            user_filters = [Repo.adminId == userId]  # user owns the repo
+            if contributed_ids:
+                user_filters.append(
+                    Repo.repoId.in_(contributed_ids)
+                )  # user contributed
+
+            user_filter = or_(*user_filters)
 
             if not is_owner:
                 # only show public repos to others
-                query = {"$and": [user_query, {"visibility": "Public"}]}
+                combined_filter = and_(user_filter, Repo.visibility == "public")
             else:
-                query.update(user_query)
+                combined_filter = user_filter
+
+            filters.append(combined_filter)
+            count_filters.append(combined_filter)
 
         # apply cursor-based pagination filter
         if cursor:
-            cursor_filter = {"updated": {"$lt": datetime.fromisoformat(cursor)}}
+            try:
+                cursor_datetime = datetime.fromisoformat(cursor.replace("Z", "+00:00"))
+                cursor_filter = Repo.updated < cursor_datetime
+                filters.append(cursor_filter)
+                count_filters.append(cursor_filter)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid cursor format")
 
-            if "$and" in query:
-                query["$and"].append(cursor_filter)
-            else:
-                query.update(cursor_filter)
+        # apply all filters
+        if filters:
+            query = query.filter(and_(*filters))
+            count_query = count_query.filter(and_(*count_filters))
+
+        # get total count (expensive but easier to implement)
+        total_repos = count_query.count()
 
         # fetch repos with pagination
-        repos_list = list(
-            Repos.find(query, {"_id": 0})
-            .sort("updated", -1)
+        repos_list = (
+            query.order_by(desc(Repo.updated))
             .limit(limit + 1)  # fetch one extra to check for next page
+            .all()
         )
 
-        total_repos = Repos.count_documents(
-            query
-        )  # this is a bit expensive but way easier to implement here
-
+        # check if there's a next page
         has_next = len(repos_list) > limit
-        next_cursor = repos_list[-1]["updated"].isoformat() if has_next else None
+        next_cursor = None
 
         if has_next:
+            # remove the extra repo and set cursor
+            next_cursor = repos_list[-1].updated
+            if isinstance(next_cursor, str):
+                next_cursor = next_cursor
+            else:
+                next_cursor = next_cursor.isoformat().replace("+00:00", "Z")
             repos_list = repos_list[:-1]
 
-        return {"result": repos_list, "nextCursor": next_cursor, "total": total_repos}
+        # convert to dictionaries
+        repos_dicts = []
+        for repo in repos_list:
+            # use your Pydantic schema here - adjust based on what you have
+            repo_schema = PublicRepoSchema.model_validate(
+                repo
+            )  # or RepoSchema if owner
+            repos_dicts.append(repo_schema.model_dump())
+
+        return {"result": repos_dicts, "nextCursor": next_cursor, "total": total_repos}
 
     except Exception as e:
         logger.error(f"Error fetching repos: {e}")
@@ -160,7 +208,11 @@ async def get_repos(
 
 
 @router.get("/popular")
-def get_popular_repos(limit: int = 10, _: UserModel = Depends(manager.optional)):
+def get_popular_repos(
+    limit: int = 10,
+    _: UserSchema = Depends(manager.optional),
+    db: Session = Depends(get_db),
+):
     """
     Retrieve the most popular repos sorted by number of stars.
 
@@ -172,50 +224,98 @@ def get_popular_repos(limit: int = 10, _: UserModel = Depends(manager.optional))
         dict: A list of the most liked repos.
     """
     try:
-        pipeline = [
-            {"$addFields": {"likesCount": {"$size": "$likes"}}},
-            {"$sort": {"likesCount": -1}},
-            {"$limit": limit},
-            {"$project": {"_id": 0, "likesCount": 0}},
-        ]
+        # query with subquery to count stars
+        popular_repos = (
+            db.query(Repo, func.count(Star.starId).label("stars_count"))
+            .outerjoin(Star)  # left join to include repos with 0 stars
+            .filter(Repo.visibility == "public")
+            .group_by(Repo.repoId)
+            .order_by(desc("stars_count"))
+            .limit(limit)
+            .all()
+        )
 
-        top_repos = list(Repos.aggregate(pipeline))
+        # convert to dictionaries
+        repos_dicts = []
+        for repo_tuple in popular_repos:
+            repo = PublicRepoSchema(**repo_tuple[0])  # the Repo object
+            likes_count = repo_tuple[1]  # the count
 
-        return {"result": top_repos}
+            repo_dict = repo.model_dump()
+            # optionally add star count to response
+            repo_dict["likes_count"] = likes_count
+
+            repos_dicts.append(repo_dict)
+
+        return {"result": repos_dicts}
 
     except Exception as e:
         logger.error(f"Error fetching popular repos: {e}")
         raise HTTPException(status_code=500, detail="Error fetching popular repos")
 
 
-@router.get("/liked")
-def get_user_liked_repos(user: UserModel = Depends(manager.required)):
+@router.get("/starred")
+def get_user_starred_repos(
+    limit: int = Query(20, description="Maximum number of starred repos to return"),
+    offset: int = Query(0, description="Number of repos to skip"),
+    user: UserSchema = Depends(manager.required),
+    db: Session = Depends(get_db),
+):
     """
-    Retrieve all repos liked by the authenticated user,
+    Retrieve all repos starred by the authenticated user,
     sorted by creation date in descending order.
 
     Args:
-        user (UserModel): The currently authenticated user.
+        limit (int): Maximum number of repos to return (default: 20).
+        offset (int): Number of repos to skip for pagination (default: 0).
+        user (UserSchema): The currently authenticated user.
 
     Returns:
-        dict: A list of liked repos.
+        dict: A list of starred repos with pagination info.
     """
     try:
-        liked_repos = list(
-            Repos.find({"likes": user.userId}, {"_id": 0}, sort=[("created", -1)])
+        # get total count
+        total_count = (
+            db.query(func.count(Star.starId))
+            .filter(Star.userId == user.userId)
+            .scalar()
         )
-        return {"result": liked_repos}
+
+        # get starred repos with pagination
+        starred_repos = (
+            db.query(Repo)
+            .join(Star, Repo.repoId == Star.repoId)
+            .filter(Star.userId == user.userId)
+            .order_by(desc(Star.created))
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+
+        # convert to dictionaries
+        starred_repos_list = []
+        for repo in starred_repos:
+            repo_schema = PublicRepoSchema(**repo)
+            starred_repos_list.append(repo_schema.model_dump())
+
+        return {
+            "result": starred_repos_list,
+            "total": total_count,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + len(starred_repos_list) < total_count,
+        }
 
     except Exception as e:
-        logger.error(f"Error fetching liked repos: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching liked repos")
+        logger.error(f"Error fetching starred repos: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching starred repos")
 
 
 @router.post("/")
 def create_repo_endpoint(
     create_repo_payload: CreateRepoRequest,
-    background_tasks: BackgroundTasks,
-    user: UserModel = Depends(manager.required),
+    user: UserSchema = Depends(manager.required),
+    db: Session = Depends(get_db),
 ):
     """
     Endpoint to create a new repo for the authenticated user.
@@ -230,183 +330,24 @@ def create_repo_endpoint(
     """
     try:
         # create the repo and retrieve its ID
-        repo = repo_service.create_repo(create_repo_payload)
+        repo_to_create = RepoSchema(**create_repo_payload.model_dump())
 
-        # fetch the created repo document
-        repo_document = Repos.find_one({"repoId": repo.repoId, "adminId": user.userId})
+        db.add(repo_to_create)
+        db.commit()
+        db.refresh(repo_to_create)
 
-        # queue background task to embed and upsert the repo
-        # background_tasks.add_task(repo_service.embed_and_upsert_repo, repo_document)
-
-        return {"result": repo_document}
+        return {"result": repo_to_create}
 
     except Exception as e:
         logger.error(f"Error creating repo: {str(e)}")
         raise HTTPException(status_code=500, detail="Error creating repo")
 
 
-@router.post("/{repo_id}/upload/image")
-async def upload_image_to_repo(
-    repo_id: str,
-    files: list[UploadFile] = File(..., description="Multiple files as UploadFile"),
-    _: UserModel = Depends(manager.required.WRITE),
-):
-    """
-    Upload multiple image files to a specific repo.
-
-    Args:
-        repo_id (str): The target repo's ID.
-        files (list[UploadFile]): List of image files to upload.
-        user (User): The authenticated user with WRITE access.
-
-    Returns:
-        dict: A list of uploaded image URLs.
-    """
-    # verify that the target repo exists
-    repo_data = Repos.find_one({"repoId": repo_id})
-    if not repo_data:
-        raise HTTPException(status_code=404, detail="Repo not found")
-
-    repo = RepoModel(**repo_data)
-    uploaded_image_urls = []
-
-    try:
-        for file in files:
-            # sanitize filename and prepare storage path
-            safe_filename = secure_filename(file.filename)
-            object_name = f"files/{repo.adminId}/{repo_id}/images/{safe_filename}"
-
-            temp_dir = "/tmp/repo_uploads"
-            os.makedirs(temp_dir, exist_ok=True)
-
-            temp_path = os.path.join(temp_dir, f"{uuid.uuid4()}_{safe_filename}")
-
-            try:
-                # read file content and write to temp location
-                contents = await file.read()
-                with open(temp_path, "wb") as buffer:
-                    buffer.write(contents)
-
-                # upload to s3 and construct public url
-                image_url = s3_client.upload_file(temp_path, object_name)
-                uploaded_image_urls.append(image_url)
-
-                # update repo document with new image and updated timestamp
-                result = Repos.update_one(
-                    {"repoId": repo_id},
-                    {
-                        "$push": {"imageKeys": object_name},
-                        "$set": {"updated": datetime.now(UTC)},
-                    },
-                )
-
-                if result.modified_count == 0:
-                    raise HTTPException(status_code=404, detail="Repo not found")
-
-            except Exception as e:
-                logger.error(f"Error uploading file {safe_filename}: {str(e)}")
-                raise HTTPException(
-                    status_code=500, detail=f"Error uploading file: {str(e)}"
-                )
-            finally:
-                # clean up temporary file
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
-
-        return {"imageUrls": uploaded_image_urls}
-
-    except Exception as e:
-        logger.error(f"Upload error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.delete("/{repo_id}/image/{image_name}")
-def delete_image(
-    repo_id: str, image_name: str, user: UserModel = Depends(manager.required.WRITE)
-):
-    """
-    Delete an image from a given repo project in both the database and S3 storage.
-
-    Args:
-        repo_id (str): The ID of the repo to which the image belongs.
-        image_name (str): The filename of the image to delete.
-        user (User): The authenticated user with WRITE access to the repo.
-
-    Returns:
-        dict: A dictionary indicating whether the deletion was successful.
-
-    Raises:
-        HTTPException:
-            - 404 if the repo or image is not found.
-            - 500 if an unexpected error occurs during deletion.
-    """
-    try:
-        # fetch the repo document
-        repo_data = Repos.find_one({"repoId": repo_id})
-        if not repo_data:
-            raise HTTPException(status_code=404, detail="Repo not found")
-
-        repo = RepoModel(**repo_data)
-        file_key = f"files/{repo.adminId}/{repo_id}/images/{image_name}"
-
-        # remove image reference from the database
-        result = Repos.update_one(
-            {"repoId": repo_id},
-            {"$pull": {"imageKeys": file_key}, "$set": {"updated": datetime.now(UTC)}},
-        )
-
-        if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="Repo not found")
-
-        # delete the image from s3 storage
-        s3_client.delete_file(file_key)
-
-        return {"result": True}
-
-    except Exception as e:
-        logger.error(f"Error deleting image: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/{repo_id}/images")
-def get_repo_images(
-    repo_id: str, _: Optional[UserModel] = Depends(manager.optional.READ)
-):
-    """
-    Retrieve all image URLs associated with the specified repo.
-
-    Args:
-        repo_id (str): The ID of the repo to fetch image URLs from.
-        _ (Optional[User]): Optional authenticated user with read access.
-
-    Returns:
-        dict: A dictionary with a "result" key containing a list of image URLs.
-
-    Raises:
-        HTTPException:
-            - 404 if the repo is not found.
-            - 500 if there's an error generating the URLs.
-    """
-    try:
-        repo_data = Repos.find_one({"repoId": repo_id})
-        if not repo_data:
-            raise HTTPException(status_code=404, detail="Repo not found")
-
-        repo = RepoModel(**repo_data)
-
-        urls = [f"https://{settings.cloudfront_domain}/{key}" for key in repo.imageKeys]
-
-        return {"result": urls}
-
-    except ClientError as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.delete("/{repo_id}")
 def delete_repo(
     repo_id: str,
-    background_tasks: BackgroundTasks,
-    user: UserModel = Depends(manager.required.ADMIN),
+    user: UserSchema = Depends(manager.required.ADMIN),
+    db: Session = Depends(get_db),
 ):
     """
     Delete a repo and all associated data, including sources, documents, images,
@@ -425,12 +366,15 @@ def delete_repo(
     """
     try:
         # delete the repo document from the database
-        repo_to_delete = Repos.find_one_and_delete(
-            {"repoId": repo_id, "adminId": user.userId}
-        )
-        if not repo_to_delete:
+        repo_to_delete = db.query(Repo).filter(Repo.repoId == repo_id).first()
+        repo_to_delete = RepoSchema(**repo_to_delete)
+
+        if not repo_to_delete or repo_to_delete.adminId != user.userId:
             logger.info(f"Repo {repo_id} not found or not owned by user {user.userId}")
             return {"result": False}
+
+        db.delete(repo_to_delete)
+        db.commit()
 
         logger.info(f"Repo {repo_id} deleted by user {user.userId}")
         path_to_clean = f"files/{user.userId}/{repo_id}"
@@ -438,6 +382,7 @@ def delete_repo(
         return {"result": True}
 
     except Exception as e:
+        db.rollback()
         logger.error(f"Error deleting repo: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -446,8 +391,8 @@ def delete_repo(
 def update_repo(
     repo_id: str,
     update_repo_payload: UpdateRepoRequest,
-    background_tasks: BackgroundTasks,
-    _: UserModel = Depends(manager.required.WRITE),
+    _: UserSchema = Depends(manager.required.WRITE),
+    db: Session = Depends(get_db),
 ):
     """
     Update an existing repo with new configuration values.
@@ -467,22 +412,15 @@ def update_repo(
             - 500 if an unexpected error occurs.
     """
     try:
-        # fetch the existing repo
-        repo_data = Repos.find_one({"repoId": repo_id})
-        if not repo_data:
-            raise HTTPException(status_code=404, detail="Repo not found")
 
         # prepare fields to update
         update_fields = update_repo_payload.model_dump(exclude_none=True)
         update_fields["updated"] = datetime.now(UTC)
 
         # perform update in the database
-        result = Repos.update_one(
-            {"repoId": repo_id},
-            {"$set": update_fields},
-        )
+        result = db.query(Repo).filter(Repo.repoId == repo_id).update(update_fields)
 
-        if result.modified_count == 0:
+        if result == 0:
             raise HTTPException(
                 status_code=404, detail="Repo not found or no changes applied"
             )
@@ -490,16 +428,18 @@ def update_repo(
         return {"result": True}
 
     except Exception as e:
-        logger.error(f"Error updating repo: {str(e)}")
+        db.rollback()
+        logger.error(f"Error updating repo: {str(e)}. Database was rolled back!")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{repo_id}")
 def get_repo_by_id(
     repo_id: str,
-    user: Optional[UserModel] = Depends(
+    user: Optional[UserSchema] = Depends(
         manager.optional.READ
     ),  # Dependency handles visibility check
+    db: Session = Depends(get_db),
 ):
     """
     Retrieve a repo by its unique ID.
@@ -517,9 +457,8 @@ def get_repo_by_id(
             - 500 if an unexpected error occurs.
     """
     try:
-        repo_data = repo_service.get_repo(
-            GetRepoRequest(repoId=repo_id, authorized=True)
-        )
+        repo_data = db.query(Repo).filter(Repo.repoId == repo_id).first()
+        repo_data = RepoSchema(**repo_data)
         return {"result": repo_data.model_dump()}
 
     except Exception as e:
@@ -527,13 +466,14 @@ def get_repo_by_id(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/{repo_id}/like")
-def like_repo(
+@router.post("/{repo_id}/star")
+def star_repo(
     repo_id: str,
-    user: UserModel = Depends(manager.required),
+    user: UserSchema = Depends(manager.required),
+    db: Session = Depends(get_db),
 ):
     """
-    Like a repo on behalf of the current user.
+    Star a repo on behalf of the current user.
 
     Args:
         repo_id (str): The ID of the repo to like.
@@ -548,31 +488,41 @@ def like_repo(
             - 500 if an unexpected error occurs.
     """
     try:
-        updated_repo = Repos.find_one_and_update(
-            {
-                "repoId": repo_id,
-                "stars": {"$ne": user.userId},
-            },  # only update if not already liked
-            {"$addToSet": {"stars": user.userId}},  # add user ID to 'likes' array
-            return_document=ReturnDocument.AFTER,
-        )
+        repo_data = db.query(Repo).filter(Repo.repoId == repo_id).first()
+        repo_data = RepoSchema(**repo_data)
 
-        if not updated_repo:
+        if not repo_data or user.userId in repo_data.stars:
             raise HTTPException(
                 status_code=400, detail="Already liked or repo not found"
             )
 
-        return {"result": len(updated_repo["stars"])}
+        # create star
+        star = Star(
+            starId=str(uuid.uuid4()),
+            repoId=repo_id,
+            userId=user.userId,
+        )
+        db.add(star)
+        db.commit()
+
+        db.query(Repo).filter(Repo.repoId == repo_id).update(
+            {Repo.stars: Repo.stars + 1}
+        )
+        db.commit()
+
+        return {"result": len(repo_data.stars)}
 
     except Exception as e:
-        logger.error(f"Error liking repo: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        db.rollback()
+        logger.error(f"Error liking repo: {str(e)}. Database was rolled back!")
+        raise HTTPException(status_code=500, detail="Failed to like repo")
 
 
 @router.post("/{repo_id}/unlike")
 def unlike_repo(
     repo_id: str,
-    user: UserModel = Depends(manager.required),
+    user: UserSchema = Depends(manager.required),
+    db: Session = Depends(get_db),
 ):
     """
     Unlike a previously liked repo on behalf of the current user.
@@ -590,66 +540,39 @@ def unlike_repo(
             - 500 if an unexpected error occurs.
     """
     try:
-        updated_repo = Repos.find_one_and_update(
-            {
-                "repoId": repo_id,
-                "stars": user.userId,
-            },  # only update if user already liked it
-            {"$pull": {"stars": user.userId}},  # remove user ID from 'likes' array
-            return_document=ReturnDocument.AFTER,
-        )
 
-        if not updated_repo:
+        repo_data = db.query(Repo).filter(Repo.repoId == repo_id).first()
+        repo_data = RepoSchema(**repo_data)
+
+        if not repo_data or user.userId not in repo_data.stars:
             raise HTTPException(
                 status_code=400, detail="Not liked yet or repo not found"
             )
 
-        return {"result": len(updated_repo["stars"])}
+        db.query(Repo).filter(Repo.repoId == repo_id).update(
+            {Repo.stars: Repo.stars - 1}
+        )
+        db.commit()
+
+        db.query(Star).filter(
+            Star.repoId == repo_id, Star.userId == user.userId
+        ).delete()
+        db.commit()
+
+        return {"result": len(repo_data.stars)}
 
     except Exception as e:
-        logger.error(f"Error unliking repo: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/user/{user_id}/saved")
-def get_user_saved_repos(
-    user_id: str,
-    user: Optional[UserModel] = Depends(manager.optional),
-):
-    """
-    Retrieve all saved repos for a user.
-    If the requesting user is not the resource owner, only public repos are returned.
-
-    Args:
-        user_id (str): ID of the user whose repos are being requested.
-        user (Optional[User]): Authenticated user (optional).
-
-    Returns:
-        dict: A dictionary with the user's saved repos under the "result" key.
-
-    Raises:
-        HTTPException: 500 if an unexpected error occurs.
-    """
-    query = {"adminId": user_id}
-    resource_owner = user is not None and user.userId == user_id
-
-    if not resource_owner:
-        query["visibility"] = "Public"
-
-    try:
-        result = Repos.find(query, {"_id": 0})
-        return {"result": result}
-
-    except Exception as e:
-        logger.error(f"Error getting user saved repos: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        db.rollback()
+        logger.error(f"Error unliking repo: {str(e)}. Database was rolled back!")
+        raise HTTPException(status_code=500, detail="Failed to unlike repo")
 
 
 @router.patch("/{repo_id}/tag/{tag}")
 def add_tag(
     repo_id: str,
     tag: str,
-    _: UserModel = Depends(manager.required.WRITE),
+    _: UserSchema = Depends(manager.required.WRITE),
+    db: Session = Depends(get_db),
 ):
     """
     Add a tag to a repo.
@@ -666,23 +589,29 @@ def add_tag(
         HTTPException: 500 if an unexpected error occurs.
     """
     try:
-        formatted_tag = tag.lower()
-        Repos.update_one(
-            {"repoId": repo_id},
-            {"$addToSet": {"tags": formatted_tag}},
+
+        tag_to_create = RepoTag(
+            tagId=str(uuid.uuid4()),
+            repoId=repo_id,
+            tag=tag,
         )
+        db.add(tag_to_create)
+        db.commit()
+
         return {"result": True}
 
     except Exception as e:
-        logger.error(f"Error adding tag: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        db.rollback()
+        logger.error(f"Error adding tag: {str(e)}. Database was rolled back!")
+        raise HTTPException(status_code=500, detail="Failed to add tag")
 
 
 @router.delete("/{repo_id}/tag/{tag}")
 def remove_tag(
     repo_id: str,
     tag: str,
-    _: UserModel = Depends(manager.required.WRITE),
+    _: UserSchema = Depends(manager.required.WRITE),
+    db: Session = Depends(get_db),
 ):
     """
     Remove a tag from a repo.
@@ -700,21 +629,23 @@ def remove_tag(
     """
     try:
         formatted_tag = tag.lower()
-        Repos.update_one(
-            {"repoId": repo_id},
-            {"$pull": {"tags": formatted_tag}},
-        )
+        db.query(RepoTag).filter(
+            RepoTag.tag == formatted_tag, RepoTag.repoId == repo_id
+        ).delete()
+        db.commit()
         return {"result": True}
 
     except Exception as e:
-        logger.error(f"Error removing tag: {str(e)}")
+        db.rollback()
+        logger.error(f"Error removing tag: {str(e)}. Database was rolled back!")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{repo_id}/contributors")
 def get_repo_contributors(
     repo_id: str,
-    _: Optional[UserModel] = Depends(manager.optional),
+    _: Optional[UserSchema] = Depends(manager.optional),
+    db: Session = Depends(get_db),
 ):
     """
     Retrieve the list of contributors for a given repo.
@@ -728,15 +659,17 @@ def get_repo_contributors(
     """
     try:
         # find the repo by ID
-        repo = Repos.find_one({"repoId": repo_id})
+        repo = db.query(Repo).filter(Repo.repoId == repo_id).first()
         if not repo:
             raise HTTPException(status_code=404, detail="Repo not found")
 
-        repo = RepoModel(**repo)
+        repo = RepoSchema(**repo)
 
         # collect contributors from iterations list
-        contributers = Contributors.find({"repoId": repo_id}, {"_id": 0})
-        contributers = list(contributers)
+        contributers = db.query(Contributor).filter(Contributor.repoId == repo_id).all()
+        contributers = [
+            ContributorSchema(**contributer) for contributer in contributers
+        ]
 
         return {"result": contributers}
 

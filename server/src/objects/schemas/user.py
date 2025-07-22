@@ -1,13 +1,8 @@
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
 from typing import Optional
-from src.db.mongo import get_collection
 from src.utils.date import now
 
-Users = get_collection("users")
-
-
-class UserModel(BaseModel):
+class UserSchema(BaseModel):
     userId: str
     username: str
     email: str
@@ -19,6 +14,9 @@ class UserModel(BaseModel):
     giteaUserId: Optional[int] = None
     giteaTokenEncrypted: Optional[str] = None
     apiKey: Optional[str] = None
+
+    class Config:
+        orm_mode = True
 
 
 class CreateUserRequest(BaseModel):
@@ -44,7 +42,7 @@ class DeleteUserRequest(BaseModel):
     userId: str
 
 
-class PublicUserModel(BaseModel):
+class PublicUserSchema(BaseModel):
     userId: str
     username: str
     email: str

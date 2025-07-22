@@ -5,7 +5,8 @@ import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from typing import List, Callable
-from src.db.mongo import client as mongo_client
+from src.db.pg import engine, SessionLocal
+from sqlalchemy import text
 
 
 class GracefulExit:
@@ -82,6 +83,19 @@ def create_sigterm_handler(
     return sigterm_handler
 
 
+def test_postgres_connection():
+    """Test PostgreSQL connection"""
+    try:
+        db = SessionLocal()
+        # simple query to test connection
+        db.execute(text("SELECT 1"))
+        db.close()
+        return True
+    except Exception as e:
+        logging.error(f"PostgreSQL connection failed: {e}")
+        return False
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -92,10 +106,10 @@ async def lifespan(app: FastAPI):
 
     def cleanup_databases():
         try:
-            mongo_client.close()
-            logging.info("Disconnected from MongoDB")
+            engine.dispose()
+            logging.info("Disconnected from PostgreSQL")
         except Exception as e:
-            logging.error(f"Error during database disconnection: {e}")
+            logging.error(f"Error during PostgreSQL disconnection: {e}")
 
     signal.signal(
         signal.SIGTERM,
@@ -103,16 +117,18 @@ async def lifespan(app: FastAPI):
     )
 
     try:
+        if test_postgres_connection():
+            logging.info("SUCCESS: CONNECTED TO POSTGRESQL")
+        else:
+            raise Exception("Failed to connect to PostgreSQL")
 
-        info = mongo_client.server_info()
-        logging.info(f"SUCCESS: CONNECTED TO MONGODB: {info}")
-        logging.info(f"SUCCESS: CONNECTED TO ALL DATABASES")
+        logging.info("SUCCESS: CONNECTED TO ALL DATABASES")
         yield
 
     except Exception as e:
         logging.error(f"ERROR: Failed to connect to databases: {str(e)}")
+        cleanup_databases()  # cleanup on startup failure
         raise e
 
     finally:
-
         cleanup_databases()

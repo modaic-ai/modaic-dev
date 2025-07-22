@@ -1,13 +1,9 @@
-from pydantic import BaseModel, Field
-from datetime import datetime
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any
-from src.db.mongo import get_collection
 from src.utils.date import now
 
-Agents = get_collection("agents")
 
-
-class AgentModel(BaseModel):
+class AgentSchema(BaseModel):
     agentId: str
     repoId: str
     name: str
@@ -20,6 +16,9 @@ class AgentModel(BaseModel):
     lastMirrored: str = Field(default_factory=lambda: now())
     created: str = Field(default_factory=lambda: now())
     updated: str = Field(default_factory=lambda: now())
+
+    class Config:
+        orm_mode = True
 
 
 class CreateAgentRequest(BaseModel):
@@ -42,7 +41,7 @@ class UpdateAgentRequest(BaseModel):
     updated: str = Field(default_factory=lambda: now())
 
 
-class PublicAgentModel(BaseModel):
+class PublicAgentSchema(BaseModel):
     agentId: str
     name: str
     description: str
@@ -54,3 +53,5 @@ class PublicAgentModel(BaseModel):
     created: str
     updated: str
     lastMirrored: str
+
+    model_config = ConfigDict(extra="ignore")

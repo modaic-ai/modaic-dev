@@ -7,6 +7,7 @@ from src.core.config import settings
 from src.lib.logger import logger
 from src.service.agent import AgentService
 from src.lib.gittea import gitea_client
+from src.db.pg import get_db
 
 router = APIRouter()
 

@@ -4,10 +4,10 @@ A full-stack application with FastAPI backend and Next.js frontend for repositor
 
 ## Architecture
 
-- **Backend**: FastAPI (Python) with MongoDB
+- **Backend**: FastAPI (Python) with PostgreSQL
 - **Frontend**: Next.js 15 (TypeScript) with React 19
 - **Authentication**: Stytch
-- **Database**: MongoDB
+- **Database**: PostgreSQL
 - **Storage**: AWS S3 (boto3)
 - **Analytics**: PostHog, Vercel Analytics
 - **Styling**: Tailwind CSS v4, Radix UI components
@@ -16,7 +16,7 @@ A full-stack application with FastAPI backend and Next.js frontend for repositor
 
 - Python 3.8+
 - Node.js 18+
-- MongoDB instance
+- PostgreSQL instance
 - AWS S3 bucket (optional)
 - Stytch account
 
@@ -80,8 +80,6 @@ modaic-dev/
    
    **Server (.env):**
    ```env
-   MONGO_DATABASE="modaic-local"
-   MONGO_URL="your_mongodb_url"
    ENVIRONMENT="dev"
    STYTCH_PROJECT_ID="your_stytch_project_id"
    STYTCH_SECRET="your_stytch_secret"
@@ -126,7 +124,7 @@ The Makefile provides convenient commands for development:
 
 ## Development Notes
 
-1. **Database**: Ensure MongoDB is running before starting the backend
+1. **Database**: Ensure PostgreSQL is running before starting the backend
 2. **Environment**: The backend loads environment variables from `.env` file
 3. **CORS**: Currently configured to allow all origins for development
 4. **Authentication**: Stytch integration is partially implemented but commented out in the frontend
@@ -142,7 +140,7 @@ Both client and server include Dockerfiles for containerized deployment:
 ## Troubleshooting
 
 - **Port conflicts**: Default ports are 3000 (frontend) and 8000 (backend)
-- **Database connection**: Verify MongoDB is running and accessible
+- **Database connection**: Verify PostgreSQL is running and accessible
 - **Environment variables**: Ensure all required variables are set
 - **Dependencies**: Run `npm install` or `pip install -r requirements.txt` if modules are missing
 

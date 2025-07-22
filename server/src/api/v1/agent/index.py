@@ -1,47 +1,62 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import JSONResponse
-from typing import List, Optional
-from src.models.agent import AgentModel, Agents, PublicAgentModel
+from sqlalchemy.orm import Session
+from typing import Optional
+from src.objects.index import (
+    Agent,
+    PublicAgentSchema,
+    User,
+    UserSchema,
+)
+from sqlalchemy import or_, desc
+from typing import List
 from src.lib.logger import logger
+from src.db.pg import get_db
 
 router = APIRouter()
 
 
-@router.get("/user/{username}")
-async def get_user_agents(username: str):
+@router.get("/user/{username}", response_model=List[PublicAgentSchema])
+def get_user_agents(username: str, db: Session = Depends(get_db)):
     """Get all agents for a specific user"""
     try:
-        agents_cursor = Agents.find({"adminId": username})
-        agents = []
-        
-        async for agent_doc in agents_cursor:
-            agent = PublicAgentModel(**agent_doc)
-            agents.append(agent.model_dump())
-        
+
+        user = db.query(User).filter(User.username == username).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user = UserSchema(**user)
+        agents = db.query(Agent).filter(Agent.adminId == user.userId).all()
+        agents = [PublicAgentSchema(**agent) for agent in agents]
+
         return JSONResponse(content=agents)
-        
+
     except Exception as e:
         logger.error(f"Failed to get user agents: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch user agents")
 
 
 @router.get("/{username}/{agent_name}")
-async def get_agent(username: str, agent_name: str):
+async def get_agent(username: str, agent_name: str, db: Session = Depends(get_db)):
     """Get specific agent by username and name"""
     try:
-        agent_doc = await Agents.find_one({
-            "adminId": username, 
-            "name": agent_name
-        })
-        
-        if not agent_doc:
+
+        user = db.query(User).filter(User.username == username).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user = UserSchema(**user)
+        agent = (
+            db.query(Agent)
+            .filter(Agent.adminId == user.userId, Agent.name == agent_name)
+            .first()
+        )
+        if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
-        
-        agent = PublicAgentModel(**agent_doc)
+
+        agent = PublicAgentSchema(**agent)
         return JSONResponse(content=agent.model_dump())
-        
-    except HTTPException:
-        raise
+
     except Exception as e:
         logger.error(f"Failed to get agent: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch agent")
@@ -51,57 +66,69 @@ async def get_agent(username: str, agent_name: str):
 async def search_agents(
     q: Optional[str] = Query(None, description="Search query"),
     tags: Optional[str] = Query(None, description="Comma-separated tags"),
-    limit: int = Query(20, description="Maximum number of results")
+    limit: int = Query(20, description="Maximum number of results"),
+    db: Session = Depends(get_db),
 ):
     """Search public agents"""
     try:
-        # Build search filter
-        search_filter = {}
-        
+        # start with base query for public agents
+        # query = db.query(Agent).filter(Agent.visibility == "public")
+        query = db.query(Agent)
+
+        # add text search filter
         if q:
-            # Search in name and description
-            search_filter["$or"] = [
-                {"name": {"$regex": q, "$options": "i"}},
-                {"description": {"$regex": q, "$options": "i"}}
-            ]
-        
+            search_term = f"%{q}%"
+            query = query.filter(
+                or_(Agent.name.ilike(search_term), Agent.description.ilike(search_term))
+            )
+
+        # add tag filter
         if tags:
             tag_list = [tag.strip() for tag in tags.split(",")]
-            search_filter["tags"] = {"$in": tag_list}
-        
-        # Execute search
-        agents_cursor = list(Agents.find(search_filter).limit(limit))
-        agents = []
-        
-        for agent_doc in agents_cursor:
-            agent = PublicAgentModel(**agent_doc)
-            agents.append(agent.model_dump())
-        
-        # Sort by updated date (most recent first)
-        agents.sort(key=lambda x: x.get("updated", ""), reverse=True)
-        
-        return JSONResponse(content=agents)
-        
+            # assuming tags is stored as JSON array
+            query = query.filter(Agent.tags.op("?|")(tag_list))
+
+        # execute search with ordering and limit
+        agents = query.order_by(desc(Agent.updated)).limit(limit).all()
+
+        # convert to public schema
+        public_agents = []
+        for agent in agents:
+            public_agent = PublicAgentSchema(**agent)
+            public_agents.append(public_agent.model_dump())
+
+        return JSONResponse(content=public_agents)
+
     except Exception as e:
         logger.error(f"Failed to search agents: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to search agents")
 
 
 @router.get("/")
-async def get_featured_agents(limit: int = Query(12, description="Number of featured agents")):
+def get_featured_agents(
+    limit: int = Query(12, description="Number of featured agents"),
+    db: Session = Depends(get_db),
+):
     """Get featured/popular agents"""
     try:
-        # For now, just return most recently updated agents
-        # In the future, this could be based on stars, downloads, etc.
-        agents_cursor = Agents.find({}).sort("updated", -1).limit(limit)
-        agents = []
-        
-        async for agent_doc in agents_cursor:
-            agent = PublicAgentModel(**agent_doc)
-            agents.append(agent.model_dump())
-        
-        return JSONResponse(content=agents)
-        
+        # get most recently updated public agents
+        # in the future, this could be based on stars, downloads, etc.
+        agents = (
+            db.query(Agent)
+            # .filter(Agent.visibility == "public")
+            .order_by(desc(Agent.updated))
+            .limit(limit)
+            .all()
+        )
+
+        # convert to public schema
+        featured_agents = []
+        for agent in agents:
+            public_agent = PublicAgentSchema(**agent)
+            featured_agents.append(public_agent.model_dump())
+
+        return JSONResponse(content=featured_agents)
+
     except Exception as e:
         logger.error(f"Failed to get featured agents: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch featured agents")

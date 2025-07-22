@@ -3,14 +3,17 @@ from fastapi import HTTPException, Cookie, Header, Depends
 from enum import Enum
 from src.lib.stytch import client as stytch_client, StytchError, StytchUser
 from src.lib.logger import logger
-from src.models.index import (
-    Users,
-    UserModel,
-    RepoModel,
+from src.objects.index import (
+    UserSchema,
+    User,
+    RepoSchema,
+    Repo,
+    ContributorSchema,
     Contributor,
-    Repos,
-    Contributors,
 )
+from src.db.pg import get_db_session
+
+db = get_db_session()
 
 
 # --- Authentication Error ---
@@ -63,14 +66,14 @@ class StytchAuthenticator:
 
 class UserRepository:
     @staticmethod
-    def find_user_by_stytch_data(stytch_user: StytchUser) -> UserModel:
+    def find_user_by_stytch_data(stytch_user: StytchUser) -> UserSchema:
         user_id = stytch_user.user_id
-        user = Users.find_one({"userId": user_id})
+        user = db.query(User).filter(User.userId == user_id).first()
         if not user:
             raise AuthenticationError(
                 "UserModel not found in local system after authentication"
             )
-        return UserModel(**user)
+        return UserSchema(**user)
 
 
 class AccessLevel(str, Enum):
@@ -84,11 +87,10 @@ class AuthService:
         self.token_extractor = TokenExtractor()
         self.stytch_auth = StytchAuthenticator()
         self.user_repo = UserRepository()
-        self.contributors = Contributors
 
     def _authenticate_token(
         self, token: str, auth_method: str, is_bearer: bool
-    ) -> UserModel:
+    ) -> UserSchema:
         try:
             stytch_user = (
                 self.stytch_auth.authenticate_bearer_token(token)
@@ -97,7 +99,7 @@ class AuthService:
             )
             user = self.user_repo.find_user_by_stytch_data(stytch_user)
             logger.info(
-                f"Authenticated user_id: {stytch_user.external_id or stytch_user.user_id} via {auth_method}"
+                f"Authenticated user_id: {stytch_user.user_id} via {auth_method}"
             )
             return user
         except StytchError as e:
@@ -109,7 +111,7 @@ class AuthService:
         self,
         authorization: Optional[str] = None,
         stytch_session_jwt: Optional[str] = None,
-    ) -> UserModel:
+    ) -> UserSchema:
         bearer_result = self.token_extractor.extract_bearer_token(authorization)
         if bearer_result:
             token, auth_method = bearer_result
@@ -123,13 +125,13 @@ class AuthService:
         )
 
     def check_repo_access(
-        self, user: Optional[UserModel], repo_id: str, required_level: AccessLevel
+        self, user: Optional[UserSchema], repo_id: str, required_level: AccessLevel
     ):
-        repo = Repos.find_one({"repoId": repo_id})
+        repo = db.query(Repo).filter(Repo.repoId == repo_id).first()
         if not repo:
             raise HTTPException(status_code=404, detail="Repo not found")
 
-        repo = RepoModel(**repo)
+        repo = RepoSchema(**repo)
         # admin has all access levels
         if user and repo.adminId == user.userId:
             return
@@ -142,12 +144,17 @@ class AuthService:
             raise HTTPException(status_code=403, detail="Not authorized")
 
         # for all other cases (private repos or write/admin access), check contributor status
-        contributor = self.contributors.find_one(
-            {"repoId": repo.repoId, "userId": user.userId}
+        contributor = (
+            db.query(Contributor)
+            .filter(
+                Contributor.repoId == repo_id,
+                Contributor.userId == user.userId,
+            )
+            .first()
         )
         if not contributor:
             raise HTTPException(status_code=403, detail="Not authorized")
-        contributor = Contributor(**contributor)
+        contributor = ContributorSchema(**contributor)
         contributor_level = contributor.accessLevel
 
         # check access level hierarchy
@@ -176,7 +183,7 @@ auth_service = AuthService()
 async def get_current_user_from_token(
     authorization: Optional[str] = Header(None),
     stytch_session_jwt: Optional[str] = Cookie(None),
-) -> UserModel:
+) -> UserSchema:
     try:
         return auth_service.authenticate_user(authorization, stytch_session_jwt)
     except AuthenticationError as e:
@@ -186,7 +193,7 @@ async def get_current_user_from_token(
 async def get_optional_user_from_token(
     authorization: Optional[str] = Header(None),
     stytch_session_jwt: Optional[str] = Cookie(None),
-) -> Optional[UserModel]:
+) -> Optional[UserSchema]:
     try:
         return auth_service.authenticate_user(authorization, stytch_session_jwt)
     except AuthenticationError as e:
@@ -200,8 +207,8 @@ async def get_optional_user_from_token(
 def require_repo_access_level(required_level: AccessLevel) -> Callable:
     async def dependency(
         repo_id: str,
-        user: Optional[UserModel] = Depends(get_current_user_from_token),
-    ) -> Optional[UserModel]:
+        user: Optional[UserSchema] = Depends(get_current_user_from_token),
+    ) -> Optional[UserSchema]:
         auth_service.check_repo_access(user, repo_id, required_level)
         return user
 
@@ -212,8 +219,8 @@ def require_repo_access_level(required_level: AccessLevel) -> Callable:
 def optional_repo_access_level(required_level: AccessLevel) -> Callable:
     async def dependency(
         repo_id: str,
-        user: Optional[UserModel] = Depends(get_optional_user_from_token),
-    ) -> Optional[UserModel]:
+        user: Optional[UserSchema] = Depends(get_optional_user_from_token),
+    ) -> Optional[UserSchema]:
         auth_service.check_repo_access(user, repo_id, required_level)
         return user
 
@@ -238,7 +245,7 @@ class AuthManager:
             self,
             authorization: Optional[str] = Header(None),
             stytch_session_jwt: Optional[str] = Cookie(None),
-        ) -> UserModel:
+        ) -> UserSchema:
             """
             For basic authentication without repo access check.
             Usage: Depends(manager.required)
@@ -257,7 +264,7 @@ class AuthManager:
             self,
             authorization: Optional[str] = Header(None),
             stytch_session_jwt: Optional[str] = Cookie(None),
-        ) -> Optional[UserModel]:
+        ) -> Optional[UserSchema]:
             return await get_optional_user_from_token(authorization, stytch_session_jwt)
 
 

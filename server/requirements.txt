@@ -3,7 +3,6 @@ uvicorn[standard]==0.24.0
 pydantic==2.5.0
 python-dotenv==1.0.0
 requests
-pymongo>=4.10.1
 pydantic-settings
 stripe
 stytch
@@ -12,3 +11,5 @@ black
 pytz
 boto3
 werkzeug
+sqlalchemy
+psycopg2-binary

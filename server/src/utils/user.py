@@ -1,6 +1,6 @@
 import re
 import uuid
-from src.models.index import Users
+from src.objects.index import User
 
 
 def generate_username(email: str) -> str:

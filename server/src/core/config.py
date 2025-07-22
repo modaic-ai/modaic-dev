@@ -8,8 +8,6 @@ logger.info(f"LOADING ENVIRONMENT: {os.getenv('ENVIRONMENT')}")
 
 
 class Settings(BaseSettings):
-    mongo_database: str
-    mongo_url: str
     environment: str
     stytch_project_id: str
     stytch_secret: str
@@ -21,6 +19,8 @@ class Settings(BaseSettings):
     gittea_url: str
     gittea_admin_token: str
     gittea_webhook_secret: str
+    postgres_database: str
+    postgres_connection_url: str
 
     class Config:
         env_file = f".env"

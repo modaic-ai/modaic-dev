@@ -1,16 +1,11 @@
-from pydantic import BaseModel
-from datetime import datetime
-from pydantic import Field
-from pydantic import ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Literal, Optional, List
-from src.db.mongo import get_collection
 from src.utils.date import now
 
-Repos = get_collection("repos")
 Visibility = Literal["private", "public"]
 
 
-class RepoModel(BaseModel):
+class RepoSchema(BaseModel):
     repoId: str
     name: str
     description: str
@@ -22,6 +17,9 @@ class RepoModel(BaseModel):
     forks: int = 0
     imageKeys: List[str] = []
     forkedFrom: Optional[str] = None
+
+    class Config:
+        orm_mode = True
 
 
 class CreateRepoRequest(BaseModel):
@@ -43,7 +41,7 @@ class UpdateRepoRequest(BaseModel):
     forkedFrom: Optional[str] = None
 
 
-class PublicRepoModel(BaseModel):  # what other people are allowed to see
+class PublicRepoSchema(BaseModel):  # what other people are allowed to see
     name: str
     description: str
     visibility: Visibility
@@ -65,3 +63,41 @@ class DeleteRepoRequest(BaseModel):
 class GetRepoRequest(BaseModel):
     repoId: str
     authorized: bool = False
+
+
+class StarRequest(BaseModel):
+    repoId: str
+    userId: str
+
+
+class StarSchema(BaseModel):
+    starId: str
+    repoId: str
+    userId: str
+    created: str = Field(default_factory=lambda: now())
+
+
+class ForkRequest(BaseModel):
+    repoId: str
+    userId: str
+
+
+class ForkSchema(BaseModel):
+    forkId: str
+    repoId: str
+    userId: str
+    created: str = Field(default_factory=lambda: now())
+
+
+class ImageKeySchema(BaseModel):
+    imageKeyId: str
+    repoId: str
+    imageKey: str
+    created: str = Field(default_factory=lambda: now())
+
+
+class RepoTagSchema(BaseModel):
+    tagId: str
+    repoId: str
+    tag: str
+    created: str = Field(default_factory=lambda: now())
