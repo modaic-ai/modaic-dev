@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/navigation-menu";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { BoxIcon, CommunityIcon, DocsIcon } from "./icons";
+import { Separator } from "@radix-ui/react-separator";
 
 export function Navbar() {
   return (
@@ -50,7 +52,22 @@ export function Navbar() {
               href="/agents"
               className={navigationMenuTriggerStyle()}
             >
-              Agents
+              <div className="flex gap-2 items-center">
+                <BoxIcon />
+                Agents
+              </div>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+
+          <NavigationMenuItem>
+            <NavigationMenuLink
+              href="/auth"
+              className={navigationMenuTriggerStyle()}
+            >
+              <div className="flex gap-2 items-center">
+                <CommunityIcon />
+                Community
+              </div>
             </NavigationMenuLink>
           </NavigationMenuItem>
 
@@ -59,7 +76,10 @@ export function Navbar() {
               href="/docs"
               className={navigationMenuTriggerStyle()}
             >
-              Docs
+              <div className="flex gap-2 items-center">
+                <DocsIcon />
+                Docs
+              </div>
             </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
@@ -97,6 +117,10 @@ export function Navbar() {
               </ul>
             </NavigationMenuContent>
           </NavigationMenuItem>
+
+          <div className="h-full bg-border text-foreground w-[1px]">
+            <p className="opacity-0">.</p>
+          </div>
           <NavigationMenuItem>
             <NavigationMenuLink
               href="/auth"
