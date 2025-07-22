@@ -1,0 +1,115 @@
+# =============================================================================
+# SERVICES SECTION - Define all containers that will run
+# =============================================================================
+services:
+  
+  # -----------------------------------------------------------------------------
+  # GITEA SERVER - Main application container
+  # -----------------------------------------------------------------------------
+  server:
+    # Docker image to use - specific version of Gitea
+    image: docker.io/gitea/gitea:1.24.3
+    
+    # Custom name for this container (easier to identify)
+    container_name: modaic-gitea-server
+    
+    # Environment variables - configuration passed to the container
+    environment:
+      # Set user/group IDs to match host system (prevents permission issues)
+      - USER_UID=1000
+      - USER_GID=1000
+      
+      # DATABASE CONFIGURATION
+      # Tell Gitea to use PostgreSQL instead of SQLite
+      - GITEA__database__DB_TYPE=postgres
+      # Database host - uses "db" service name, with fallback port 5432
+      - GITEA__database__HOST=${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}
+      # Database name - must be set in your .env file
+      - GITEA__database__NAME=${POSTGRES_DB:?POSTGRES_DB not set}
+      # Database username - must be set in your .env file
+      - GITEA__database__USER=${POSTGRES_USER:?POSTGRES_USER not set}
+      # Database password - must be set in your .env file
+      - GITEA__database__PASSWD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD not set}
+      
+      # SERVER CONFIGURATION
+      # SSH port inside container (mapped to 2221 on host)
+      - GITEA__server__SSH_PORT=2221
+      # Base URL for web interface - change to your domain
+      - GITEA__server__ROOT_URL=http://your-fqdn
+    
+    # Network connectivity - connects to backend network to talk to database
+    networks:
+      - backend
+    
+    # Volume mounts - persistent data storage
+    volumes:
+      # Main Gitea data (repositories, config, etc.) - persistent volume
+      - gitea-data:/data
+      # Share host timezone with container (read-only)
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    
+    # Port mapping - host_port:container_port
+    ports:
+      # Web interface - access Gitea at http://localhost:3000
+      - "3000:3000"
+      # SSH access - git clone via SSH on port 2221
+      - "2221:22"
+    
+    # Dependency management - ensure database starts before Gitea
+    depends_on:
+      - db
+    
+    # Restart policy - restart container unless manually stopped
+    restart: unless-stopped
+
+  # -----------------------------------------------------------------------------
+  # DATABASE SERVER - PostgreSQL container for storing Gitea data
+  # -----------------------------------------------------------------------------
+  db:
+    # Official PostgreSQL image version 17.5
+    image: docker.io/library/postgres:17.5
+    
+    # Custom container name
+    container_name: gitea-db
+    
+    # PostgreSQL configuration via environment variables
+    environment:
+      # Database username - loaded from .env file
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER not set}
+      # Database password - loaded from .env file  
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD not set}
+      # Database name - loaded from .env file
+      - POSTGRES_DB=${POSTGRES_DB:?POSTGRES_DB not set}
+    
+    # Connect to backend network to communicate with Gitea
+    networks:
+      - backend
+    
+    # Persistent storage for database files
+    volumes:
+      # PostgreSQL data directory - keeps your database persistent
+      - gitea-db:/var/lib/postgresql/data
+    
+    # Always restart unless manually stopped
+    restart: unless-stopped
+
+# =============================================================================
+# VOLUMES SECTION - Define persistent storage
+# =============================================================================
+volumes:
+  # Storage for Gitea application data (repos, config, etc.)
+  gitea-data:
+    driver: local  # Stored on local filesystem
+  
+  # Storage for PostgreSQL database files
+  gitea-db:
+    driver: local  # Stored on local filesystem
+
+# =============================================================================
+# NETWORKS SECTION - Define how containers communicate
+# =============================================================================
+networks:
+  # Backend network for database communication
+  backend:
+    external: true  # Network exists outside this compose file (must be created separately)
