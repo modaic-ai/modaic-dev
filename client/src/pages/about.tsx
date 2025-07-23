@@ -1,12 +1,12 @@
 import { ReactElement } from "react";
-import PublicLayout from "@/layouts/PublicLayout";
+import { Layout } from "@/layouts/PublicLayout";
 
 function About() {
   return <div>About</div>;
 }
 
 About.getLayout = (page: ReactElement) => {
-  return <PublicLayout>{page}</PublicLayout>;
+  return <Layout>{page}</Layout>;
 };
 
 export default About;

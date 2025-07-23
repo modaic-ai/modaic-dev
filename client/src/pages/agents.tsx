@@ -1,5 +1,5 @@
 import React, { ReactElement, useState } from "react";
-import { AgentList } from "@/components/agent/AgentList";
+import { AgentList } from "@/components/agent/agent-list";
 import { useSearchAgents } from "@/hooks/agent";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

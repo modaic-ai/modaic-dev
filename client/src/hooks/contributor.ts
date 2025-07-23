@@ -1,18 +1,18 @@
 import { api } from "@/lib/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export function useInviteContributor(repoId: string) {
+export function useInviteContributor(agentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (emailToInvite: string) => {
-      const response = await api.post(`/contributor/repo/${repoId}`, {
+      const response = await api.post(`/contributor/agent/${agentId}`, {
         emailToInvite,
       });
       return response.data.result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["contributor", "repo", repoId],
+        queryKey: ["contributor", "agent", agentId],
       });
     },
     onError: (err: any) => {
@@ -21,18 +21,18 @@ export function useInviteContributor(repoId: string) {
   });
 }
 
-export function useRevokeInvite(repoId: string) {
+export function useRevokeInvite(agentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (contributorId: string) => {
       const response = await api.delete(
-        `/contributor/repo/${repoId}/${contributorId}/invite`
+        `/contributor/agent/${agentId}/${contributorId}/invite`
       );
       return response.data.result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["contributor", "repo", repoId],
+        queryKey: ["contributor", "agent", agentId],
       });
     },
     onError: (err: any) => {
@@ -41,19 +41,19 @@ export function useRevokeInvite(repoId: string) {
   });
 }
 
-export function useGetAllContributorsForRepo(repoId?: string | null) {
+export function useGetAllContributorsForAgent(agentId?: string | null) {
   return useQuery({
-    queryKey: ["contributor", "repo", repoId],
+    queryKey: ["contributor", "agent", agentId],
     queryFn: async () => {
-      if (!repoId) return null;
-      const response = await api.get(`/contributor/repo/${repoId}`);
+      if (!agentId) return null;
+      const response = await api.get(`/contributor/agent/${agentId}`);
       return response.data.result;
     },
-    enabled: !!repoId,
+    enabled: !!agentId,
   });
 }
 
-export function useToggleContributorRole(repoId: string) {
+export function useToggleContributorRole(agentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -64,14 +64,14 @@ export function useToggleContributorRole(repoId: string) {
       role: "owner" | "write" | "read";
     }) => {
       const response = await api.patch(
-        `/contributor/repo/${repoId}/${contributorId}/role`,
+        `/contributor/agent/${agentId}/${contributorId}/role`,
         { role }
       );
       return response.data.result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["contributor", "repo", repoId],
+        queryKey: ["contributor", "agent", agentId],
       });
     },
     onError: (err: any) => {
@@ -80,18 +80,18 @@ export function useToggleContributorRole(repoId: string) {
   });
 }
 
-export function useDeleteContributor(repoId: string) {
+export function useDeleteContributor(agentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (contributorId: string) => {
       const response = await api.delete(
-        `/contributor/repo/${repoId}/${contributorId}`
+        `/contributor/agent/${agentId}/${contributorId}`
       );
       return response.data.result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["contributor", "repo", repoId],
+        queryKey: ["contributor", "agent", agentId],
       });
     },
     onError: (err: any) => {
@@ -100,18 +100,18 @@ export function useDeleteContributor(repoId: string) {
   });
 }
 
-export function useAcceptInvite(repoId: string) {
+export function useAcceptInvite(agentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (userId: string) => {
       const response = await api.patch(
-        `/contributor/repo/${repoId}/${userId}/accept`
+        `/contributor/agent/${agentId}/${userId}/accept`
       );
       return response.data.result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["contributor", "repo", repoId],
+        queryKey: ["contributor", "agent", agentId],
       });
     },
     onError: (err: any) => {
@@ -120,18 +120,18 @@ export function useAcceptInvite(repoId: string) {
   });
 }
 
-export function useRejectInvite(repoId: string) {
+export function useRejectInvite(agentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (userId: string) => {
       const response = await api.delete(
-        `/contributor/repo/${repoId}/${userId}/invite`
+        `/contributor/agent/${agentId}/${userId}/invite`
       );
       return response.data.result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["contributor", "repo", repoId],
+        queryKey: ["contributor", "agent", agentId],
       });
     },
     onError: (err: any) => {
@@ -140,14 +140,16 @@ export function useRejectInvite(repoId: string) {
   });
 }
 
-export function useCheckAuthorization(repoId?: string | null) {
+export function useCheckAuthorization(agentId?: string | null) {
   return useQuery({
-    queryKey: ["contributor", "authorization", repoId],
+    queryKey: ["contributor", "authorization", agentId],
     queryFn: async () => {
-      if (!repoId) return null;
-      const response = await api.get(`/contributor/repo/${repoId}/authorization`);
+      if (!agentId) return null;
+      const response = await api.get(
+        `/contributor/agent/${agentId}/authorization`
+      );
       return response.data;
     },
-    enabled: !!repoId,
+    enabled: !!agentId,
   });
 }

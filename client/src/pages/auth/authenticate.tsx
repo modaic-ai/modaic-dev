@@ -4,8 +4,9 @@ import { useStytch } from "@stytch/nextjs";
 import { useCompleteOauth } from "@/hooks/auth";
 import { toast } from "sonner";
 import { useRouter } from "next/router";
-import { LoaderIcon } from "lucide-react";
 import { useUser } from "@/providers/user-provider";
+import { JellyTriangle } from "ldrs/react";
+import "ldrs/react/JellyTriangle.css";
 
 export const SESSION_MINUTES = 10077;
 
@@ -64,8 +65,8 @@ const GoogleCallback = () => {
           window.location.href = redirectUrl;
         } else {
           window.location.href = user
-            ? `/user/${user.username}?src=oauth`
-            : "/home";
+            ? `/agents`
+            : "/agents";
         }
       } else {
         throw new Error("No session or user returned from Stytch");
@@ -97,10 +98,11 @@ const GoogleCallback = () => {
           {isProcessing ? "Logging you in..." : "Preparing authentication..."}
         </p>
         {isProcessing && (
-          <LoaderIcon
-            size={24}
-            className="animate-spin text-violet-400/50"
-          ></LoaderIcon>
+          <JellyTriangle
+            size="30"
+            speed="1.75"
+            color="white"
+          />
         )}
       </div>
     </div>

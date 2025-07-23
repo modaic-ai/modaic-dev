@@ -14,7 +14,7 @@ type BackendRegisterRequest = {
 type BackendRegisterResponse = {
   message: string;
   userId: string;
-  repoId: string;
+  agentId: string;
   email: string;
   username: string;
 };
@@ -50,7 +50,7 @@ export function useSubmitRegister() {
         localStorage.removeItem("returnTo");
         window.location.href = returnTo;
       } else {
-        window.location.href = `/auth/onboarding?email=${encodeURIComponent(data.email)}&username=${encodeURIComponent(data.username)}&isGoogleSignup=false&defaultRepoId=${data.repoId}`;
+        window.location.href = `/agents`;
       }
     },
     onError: (error: AxiosError) => {
@@ -73,7 +73,7 @@ export function useCompleteOauth() {
   return useMutation({
     mutationFn: async (payload: CompleteOauthRequest) => {
       console.log("Sending OAuth completion request:", payload);
-      const response = await api.post(`/auth/authenticate`, payload);
+      const response = await api.post(`/auth`, payload);
       console.log("OAuth completion response:", response.data);
       return response.data.redirect;
     },

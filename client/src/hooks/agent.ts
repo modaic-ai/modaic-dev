@@ -2,8 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Agent, PublicAgent } from "@/types/agent";
 
-// Get user's agents
-export const useUserAgents = (username: string) => {
+// get user's agents
+export const useGetUserAgents = (username: string) => {
   return useQuery({
     queryKey: ["agents", "user", username],
     queryFn: async () => {
@@ -14,8 +14,8 @@ export const useUserAgents = (username: string) => {
   });
 };
 
-// Get single agent
-export const useAgent = (username: string, agentName: string) => {
+// get single agent
+export const useGetAgent = (username: string, agentName: string) => {
   return useQuery({
     queryKey: ["agents", username, agentName],
     queryFn: async () => {
@@ -26,7 +26,7 @@ export const useAgent = (username: string, agentName: string) => {
   });
 };
 
-// Search public agents
+// search public agents
 export const useSearchAgents = (query: string, tags?: string[]) => {
   return useQuery({
     queryKey: ["agents", "search", query, tags],
@@ -42,8 +42,8 @@ export const useSearchAgents = (query: string, tags?: string[]) => {
   });
 };
 
-// Get user's API key
-export const useApiKey = () => {
+// get user's API key
+export const useGetApiKey = () => {
   return useQuery({
     queryKey: ["user", "api-key"],
     queryFn: async () => {
@@ -53,7 +53,7 @@ export const useApiKey = () => {
   });
 };
 
-// Regenerate API key
+// regenerate API key
 export const useRegenerateApiKey = () => {
   const queryClient = useQueryClient();
 

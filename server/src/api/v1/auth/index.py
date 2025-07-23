@@ -48,7 +48,6 @@ def authenticate(
     db: Session = Depends(get_db),
 ):
     try:
-
         # extract and validate required fields
         email = auth_request.email
         if not email:
@@ -65,28 +64,27 @@ def authenticate(
         # find existing user
         user = db.query(User).filter(User.email == email).first()
         if user:
-            user = UserSchema(**user)
             username = user.username
         else:
-            username = generate_username(email)
+            username = generate_username(email, db)
 
         if not user:
             # create a new user
             create_user_data = CreateUserRequest(
-                userId=userId,
                 username=username,
                 email=email,
                 fullName=f"{first_name} {last_name}".strip(),
                 profilePictureUrl=profile_picture_url,
             )
 
-            user_to_create = UserSchema(
-                userId=create_user_data.userId,
+            user_to_create = User(
+                userId=userId,
                 username=create_user_data.username,
                 email=create_user_data.email,
-                imageKey=create_user_data.imageKey,
                 fullName=create_user_data.fullName,
                 profilePictureUrl=create_user_data.profilePictureUrl,
+                created=create_user_data.created,
+                updated=create_user_data.updated,
             )
 
             db.add(user_to_create)
@@ -101,7 +99,7 @@ def authenticate(
             username = user.username
 
         # build redirect URL
-        redirect = f"/{username}"
+        redirect = f"/agents"
         params = "?src=oauth"
 
         full_redirect_url = f"{settings.next_url}{redirect}{params}"
@@ -109,7 +107,8 @@ def authenticate(
         return JSONResponse(content={"redirect": full_redirect_url, "success": True})
 
     except Exception as e:
-        logger.error(f"Authentication error: {str(e)}")
+        db.rollback()
+        logger.error(f"Authentication error: {str(e)}. Database was rolled back!")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -166,17 +165,18 @@ def register(registerRequest: RegisterRequest, db: Session = Depends(get_db)):
 
         # create the user in postgres
         create_user_request = CreateUserRequest(
-            userId=userId,
             username=registerRequest.username,
             email=registerRequest.email,
             fullName=registerRequest.fullName,
         )
 
         user_to_create = User(
-            userId=create_user_request.userId,
+            userId=userId,
             username=create_user_request.username,
             email=create_user_request.email,
             fullName=create_user_request.fullName,
+            created=create_user_request.created,
+            updated=create_user_request.updated,
         )
 
         db.add(user_to_create)

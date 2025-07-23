@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useApiKey, useRegenerateApiKey } from "@/hooks/agent";
+import { useGetApiKey, useRegenerateApiKey } from "@/hooks/agent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 export function ApiKeyManager() {
   const [showKey, setShowKey] = useState(false);
-  const { data: apiData, isLoading, error } = useApiKey();
+  const { data: apiData, isLoading, error } = useGetApiKey();
   const regenerateApiKey = useRegenerateApiKey();
 
   const handleCopyKey = () => {

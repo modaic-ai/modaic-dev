@@ -1,6 +1,6 @@
 import React from "react";
 import { PublicAgent } from "@/types/agent";
-import { AgentCard } from "./AgentCard";
+import { AgentCard } from "./agent-card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface AgentListProps {

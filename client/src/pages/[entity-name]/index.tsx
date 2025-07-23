@@ -1,21 +1,21 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
-import { AgentList } from "@/components/agent/AgentList";
+import { AgentList } from "@/components/agent/agent-list";
 import { ApiKeyManager } from "@/components/user/api-key-manager";
-import { useUserAgents } from "@/hooks/agent";
+import { useGetUserAgents } from "@/hooks/agent";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import AppLayout from "@/layouts/AppLayout";
 import { NextPageWithLayout } from "@/pages/_app";
+import { Layout } from "@/layouts/PublicLayout";
 
 const UserProfilePage: NextPageWithLayout = () => {
   const router = useRouter();
   const { entityName } = router.query;
   const [activeTab, setActiveTab] = useState<"agents" | "settings">("agents");
-  
+
   const entityNameStr = Array.isArray(entityName) ? entityName[0] : entityName;
-  
-  const { data: agents, isLoading } = useUserAgents(entityNameStr || '');
+
+  const { data: agents, isLoading } = useGetUserAgents(entityNameStr || "");
 
   if (!entityNameStr) {
     return <div>Loading...</div>;
@@ -34,9 +34,7 @@ const UserProfilePage: NextPageWithLayout = () => {
             <Button variant="outline" size="sm">
               Follow
             </Button>
-            <Button size="sm">
-              + New Agent
-            </Button>
+            <Button size="sm">+ New Agent</Button>
           </div>
         </div>
       </div>
@@ -52,7 +50,7 @@ const UserProfilePage: NextPageWithLayout = () => {
             }`}
             onClick={() => setActiveTab("agents")}
           >
-            🤖 Agents {agents ? `(${agents.length})` : ''}
+            🤖 Agents {agents ? `(${agents.length})` : ""}
           </button>
           <button
             className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
@@ -77,9 +75,9 @@ const UserProfilePage: NextPageWithLayout = () => {
                 AI agents created and shared by {entityNameStr}
               </p>
             </div>
-            
-            <AgentList 
-              agents={agents || []} 
+
+            <AgentList
+              agents={agents || []}
               loading={isLoading}
               emptyMessage={`${entityNameStr} hasn't published any agents yet.`}
             />
@@ -92,7 +90,7 @@ const UserProfilePage: NextPageWithLayout = () => {
                 Manage your API credentials and development tools
               </p>
             </div>
-            
+
             <ApiKeyManager />
           </div>
         )}
@@ -101,6 +99,6 @@ const UserProfilePage: NextPageWithLayout = () => {
   );
 };
 
-UserProfilePage.getLayout = (page) => <AppLayout>{page}</AppLayout>;
+UserProfilePage.getLayout = (page) => <Layout>{page}</Layout>;
 
 export default UserProfilePage;
