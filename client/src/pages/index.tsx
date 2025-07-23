@@ -224,16 +224,24 @@ function Home() {
       {/* Content Overlay */}
       <div className="relative z-10 flex flex-col items-center justify-center p-6">
         <div className="flex flex-col items-center gap-8 w-full mx-auto">
-          <div className="max-w-xl text-8xl font-bold">
-            <div className="text-8xl text-center text-foreground font-grotesk uppercase">
+          <div className="max-w-xl text-8xl">
+            <div
+              className={`text-8xl font-extrabold text-center text-foreground uppercase`}
+            >
               Build the Future.
             </div>
           </div>
           <div className="flex gap-4">
-            <Button className="mt-4 h-fit w-fit p-0 font-semibold rounded-full px-8 py-4 cursor-pointer">
-              Get Started
+            <Button
+              className="truncate font-semibold px-6 py-2 mt-4 h-fit w-fit rounded-full cursor-pointer"
+              onClick={() => router.push("/auth")}
+            >
+              Start Building
             </Button>
-            <Button className="mt-4 h-fit w-fit p-0 font-semibold rounded-full px-8 py-4 cursor-pointer">
+            <Button
+              className="truncate font-semibold px-6 py-2 mt-4 h-fit w-fit rounded-full cursor-pointer"
+              onClick={() => router.push("/auth")}
+            >
               Login
             </Button>
           </div>

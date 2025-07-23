@@ -48,7 +48,7 @@ function AgentsPage() {
     <div className="">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">AI Agent Hub</h1>
+        <h1 className="text-xl font-bold mb-2">AI Agent Hub</h1>
         <p className="text-muted-foreground">
           Discover, share, and deploy AI agents built by the community
         </p>

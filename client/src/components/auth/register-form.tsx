@@ -24,7 +24,7 @@ export const RegisterForm = ({
   <Form {...form}>
     <form
       onSubmit={form.handleSubmit(onSubmit)}
-      className="max-w-lg w-full space-y-6"
+      className="w-md w-full space-y-6"
     >
       <FormField
         control={form.control}

@@ -23,7 +23,7 @@ export const EmailStepForm = ({
   <Form {...form}>
     <form
       onSubmit={form.handleSubmit(onSubmit)}
-      className="max-w-lg w-full space-y-6"
+      className="w-md w-full space-y-6"
     >
       <OAuthButton />
 
@@ -58,7 +58,7 @@ export const EmailStepForm = ({
       />
       <Button
         type="submit"
-        className="w-full"
+        className="w-full font-semibold"
         disabled={isPending}
         data-testid="continue-with-email"
       >
@@ -67,15 +67,15 @@ export const EmailStepForm = ({
       <div className="pt-2 text-xs text-center text-muted-foreground">
         By continuing, you agree to our{" "}
         <Link
-          href="/about/terms-of-service"
-          className="underline hover:text-primary"
+          href="/terms"
+          className="underline hover:font-semibold"
         >
           Terms
         </Link>{" "}
         and{" "}
         <Link
-          href="/about/privacy-policy"
-          className="underline hover:text-primary"
+          href="/privacy"
+          className="underline hover:font-semibold"
         >
           Privacy Policy
         </Link>

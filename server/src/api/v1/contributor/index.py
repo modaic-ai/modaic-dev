@@ -6,8 +6,8 @@ from src.objects.index import (
     PublicUserSchema,
     ContributorSchema,
     Contributor,
-    RepoSchema,
-    Repo,
+    AgentSchema,
+    Agent,
 )
 from src.api.v1.auth.utils import manager
 from src.lib.logger import logger
@@ -26,9 +26,9 @@ class InviteContributer(BaseModel):
     emailToInvite: str
 
 
-@router.post("/repo/{repo_id}")
+@router.post("/agent/{agent_id}")
 def invite_contributer(
-    repo_id: str,
+    agent_id: str,
     payload: InviteContributer,
     background_tasks: BackgroundTasks,
     sender: UserSchema = Depends(manager.required.ADMIN),
@@ -45,7 +45,7 @@ def invite_contributer(
             db.query(Contributor)
             .filter(
                 Contributor.email == invite_email,
-                Contributor.repoId == repo_id,
+                Contributor.agentId == agent_id,
             )
             .first()
         )
@@ -71,7 +71,7 @@ def invite_contributer(
                 db.query(Contributor)
                 .filter(
                     Contributor.userId == existing_user.userId,
-                    Contributor.repoId == repo_id,
+                    Contributor.agentId == agent_id,
                 )
                 .first()
             ):
@@ -85,7 +85,7 @@ def invite_contributer(
                 userId=existing_user.userId,
                 username=existing_user.username,
                 email=existing_user.email,
-                repoId=repo_id,
+                agentId=agent_id,
                 invitedBy=sender.userId,
             )
 
@@ -95,18 +95,18 @@ def invite_contributer(
             logger.info(f"Contributor invited: {contributor_info.contributorId}")
 
             # send email to user
-            repo = db.query(Repo).filter(Repo.repoId == repo_id).first()
-            if not repo:
-                raise HTTPException(status_code=404, detail="Repo not found")
-            repo = RepoSchema(**repo)
+            agent = db.query(Agent).filter(Agent.agentId == agent_id).first()
+            if not agent:
+                raise HTTPException(status_code=404, detail="Agent not found")
+            agent = AgentSchema(**agent)
 
             """
             background_tasks.add_task(
-                email_service.user_invited_to_repo,
+                email_service.user_invited_to_agent,
                 recipient_email=invite_email,
                 recipient_name=existing_user.fullName or existing_user.username,
-                repo_name=repo.name,
-                repo_link=f"{settings.next_url}/repo/{repo_id}",
+                agent_name=agent.name,
+                agent_link=f"{settings.next_url}/agent/{agent_id}",
                 sender_name=sender.fullName or sender.username,
             )
             """
@@ -122,9 +122,9 @@ def invite_contributer(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/repo/{repo_id}/{contributor_id}/invite")
+@router.delete("/agent/{agent_id}/{contributor_id}/invite")
 def revoke_invite(
-    repo_id: str,
+    agent_id: str,
     contributor_id: str,
     _: UserSchema = Depends(manager.required.ADMIN),
     db: Session = Depends(get_db),
@@ -134,7 +134,7 @@ def revoke_invite(
             db.query(Contributor)
             .filter(
                 Contributor.contributorId == contributor_id,
-                Contributor.repoId == repo_id,
+                Contributor.agentId == agent_id,
             )
             .first()
         )
@@ -154,15 +154,17 @@ def revoke_invite(
         raise HTTPException(status_code=500, detail="Failed to revoke invite")
 
 
-@router.get("/repo/{repo_id}")
-def get_all_contributors_for_repo(
-    repo_id: str,
+@router.get("/agent/{agent_id}")
+def get_all_contributors_for_agent(
+    agent_id: str,
     _: UserSchema = Depends(manager.optional.READ),
     db: Session = Depends(get_db),
 ):
     try:
-        contributors = db.query(Contributor).filter(Contributor.repoId == repo_id).all()
-        logger.info(f"Contributors for repo {repo_id}: {contributors}")
+        contributors = (
+            db.query(Contributor).filter(Contributor.agentId == agent_id).all()
+        )
+        logger.info(f"Contributors for agent {agent_id}: {contributors}")
         return {"result": contributors}
 
     except Exception as e:
@@ -174,9 +176,9 @@ class ToggleContributorRole(BaseModel):
     role: Literal["owner", "write", "read"]
 
 
-@router.patch("/repo/{repo_id}/{contributor_id}/role")
+@router.patch("/agent/{agent_id}/{contributor_id}/role")
 def toggle_contributor_role(
-    repo_id: str,
+    agent_id: str,
     contributor_id: str,
     payload: ToggleContributorRole,
     _: UserSchema = Depends(manager.required.ADMIN),
@@ -187,7 +189,7 @@ def toggle_contributor_role(
             db.query(Contributor)
             .filter(
                 Contributor.contributorId == contributor_id,
-                Contributor.repoId == repo_id,
+                Contributor.agentId == agent_id,
             )
             .first()
         )
@@ -195,7 +197,7 @@ def toggle_contributor_role(
             existing_contributor = Contributor(**existing_contributor)
             db.query(Contributor).filter(
                 Contributor.contributorId == contributor_id,
-                Contributor.repoId == repo_id,
+                Contributor.agentId == agent_id,
             ).update({"accessLevel": payload.role})
             logger.info(
                 f"Contributor role toggled: {existing_contributor.contributorId}"
@@ -210,9 +212,9 @@ def toggle_contributor_role(
         raise HTTPException(status_code=500, detail="Failed to toggle contributor role")
 
 
-@router.delete("/repo/{repo_id}/{contributor_id}")
+@router.delete("/agent/{agent_id}/{contributor_id}")
 def delete_contributor(
-    repo_id: str,
+    agent_id: str,
     contributor_id: str,
     _: UserSchema = Depends(manager.required.ADMIN),
     db: Session = Depends(get_db),
@@ -222,7 +224,7 @@ def delete_contributor(
             db.query(Contributor)
             .filter(
                 Contributor.contributorId == contributor_id,
-                Contributor.repoId == repo_id,
+                Contributor.agentId == agent_id,
             )
             .first()
         )
@@ -238,9 +240,9 @@ def delete_contributor(
         raise HTTPException(status_code=500, detail="Failed to delete contributor")
 
 
-@router.patch("/repo/{repo_id}/{user_id}/accept")
+@router.patch("/agent/{agent_id}/{user_id}/accept")
 def accept_invite(
-    repo_id: str,
+    agent_id: str,
     user_id: str,
     user: UserSchema = Depends(manager.required),
     db: Session = Depends(get_db),
@@ -251,7 +253,7 @@ def accept_invite(
             db.query(Contributor)
             .filter(
                 Contributor.userId == user_id,
-                Contributor.repoId == repo_id,
+                Contributor.agentId == agent_id,
             )
             .first()
         )
@@ -259,7 +261,7 @@ def accept_invite(
             existing_contributor = Contributor(**existing_contributor)
             db.query(Contributor).filter(
                 Contributor.userId == user_id,
-                Contributor.repoId == repo_id,
+                Contributor.agentId == agent_id,
             ).update(
                 {
                     "pending": False,
@@ -279,9 +281,9 @@ def accept_invite(
         raise HTTPException(status_code=500, detail="Failed to accept invite")
 
 
-@router.delete("/repo/{repo_id}/{user_id}/invite")
+@router.delete("/agent/{agent_id}/{user_id}/invite")
 def reject_invite(
-    repo_id: str,
+    agent_id: str,
     user_id: str,
     user: UserSchema = Depends(manager.required),
     db: Session = Depends(get_db),
@@ -291,7 +293,7 @@ def reject_invite(
             db.query(Contributor)
             .filter(
                 Contributor.userId == user_id,
-                Contributor.repoId == repo_id,
+                Contributor.agentId == agent_id,
             )
             .first()
         )
@@ -309,9 +311,9 @@ def reject_invite(
         raise HTTPException(status_code=500, detail="Failed to reject invite")
 
 
-@router.get("/repo/{repo_id}/authorization")
+@router.get("/agent/{agent_id}/authorization")
 def check_authorized(
-    repo_id: str,
+    agent_id: str,
     user: Optional[UserSchema] = Depends(manager.optional.READ),
     db: Session = Depends(get_db),
 ):
@@ -320,15 +322,15 @@ def check_authorized(
             return {"result": None, "invite": False, "inviter": None}
 
         # first check if user is the resource owner
-        repo = db.query(Repo).filter(Repo.repoId == repo_id).first()
-        repo = RepoSchema(**repo) if repo else None
-        if repo and repo.adminId == user.userId:
+        agent = db.query(Agent).filter(Agent.agentId == agent_id).first()
+        agent = AgentSchema(**agent) if agent else None
+        if agent and agent.adminId == user.userId:
             return {"result": "owner", "invite": False, "inviter": None}
 
         # then check if user is a contributor
         existing_contributor = (
             db.query(Contributor)
-            .filter(Contributor.repoId == repo_id, Contributor.userId == user.userId)
+            .filter(Contributor.agentId == agent_id, Contributor.userId == user.userId)
             .first()
         )
 

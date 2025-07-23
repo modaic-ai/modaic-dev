@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 from src.db.index import lifespan
 from src.db.pg import Base, engine
 from src.api.index import (
-    repo_router,
     user_router,
     auth_router,
     contributor_router,
@@ -39,7 +38,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(repo_router, prefix="/api/v1/repo")
 app.include_router(user_router, prefix="/api/v1/user")
 app.include_router(auth_router, prefix="/api/v1/auth")
 app.include_router(contributor_router, prefix="/api/v1/contributor")

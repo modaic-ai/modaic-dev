@@ -35,7 +35,7 @@ def test_connection():
     """Test database connection"""
     try:
         db = SessionLocal()
-        db.execute(text('SELECT 1'))
+        db.execute(text("SELECT 1"))
         db.close()
         logger.info("PostgreSQL connection test successful")
         return True

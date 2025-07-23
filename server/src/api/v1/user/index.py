@@ -22,7 +22,7 @@ def get_user(userId: str, db: Session = Depends(get_db)):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        user = UserSchema(**user)
+        user = UserSchema.model_validate(user)
         return JSONResponse(content=user.model_dump())
 
     except Exception as e:

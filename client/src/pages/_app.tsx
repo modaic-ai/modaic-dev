@@ -3,6 +3,9 @@ import type { AppProps } from "next/app";
 import { useState, useEffect, type ReactElement, type ReactNode } from "react";
 import type { NextPage } from "next";
 import { Inter as FontSans } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
+import { Noto_Sans_Sunuwar } from "next/font/google";
+import { Work_Sans } from "next/font/google";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StytchProvider } from "@stytch/nextjs";
 import { createStytchUIClient } from "@stytch/nextjs/ui";
@@ -30,6 +33,24 @@ const fontSans = FontSans({
   variable: "--font-mono",
 });
 
+export const fontGrotesk = Space_Grotesk({
+  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-grotesk",
+});
+
+export const fontNotoSansSunuwar = Noto_Sans_Sunuwar({
+  weight: ["400"],
+  subsets: ["latin", "sunuwar"],
+  variable: "--font-noto-sans-sunuwar",
+});
+
+export const fontWorkSans = Work_Sans({
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  subsets: ["latin"],
+  variable: "--font-work-sans",
+});
+
 const queryClient = new QueryClient();
 const stytch = createStytchUIClient(environment.stytch_public_token as string, {
   cookieOptions: {
@@ -39,8 +60,7 @@ const stytch = createStytchUIClient(environment.stytch_public_token as string, {
 });
 
 export default function App({ Component, pageProps }: AppPropsWithLayout) {
-  const getLayout =
-    Component.getLayout || ((page) => <Layout>{page}</Layout>);
+  const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
   const [isOnline, setIsOnline] = useState(true);
   const [toastId, setToastId] = useState<any>(null);
   useEffect(() => {
@@ -111,14 +131,15 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
             {getLayout(
               <>
                 <Analytics />
-                <div className={`${fontSans.className}`}>
+                <div
+                  className={`${fontWorkSans.className} overflow-hidden`}
+                >
                   <Component {...pageProps} />
                   <SonnerToaster />
                 </div>
               </>
             )}
           </UserProvider>
-          <div className={fontSans.className}></div>
         </ThemeProvider>
       </QueryClientProvider>
     </StytchProvider>

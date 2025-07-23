@@ -33,7 +33,7 @@ function Footer() {
       </div>
       <div>
         <small className="hidden lg:inline text-xs font-medium leading-none text-slate-500 dark:text-muted-foreground italic">
-          The Future is Modular
+          A New Software Paradigm
         </small>
       </div>
     </div>

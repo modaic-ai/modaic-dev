@@ -3,73 +3,92 @@ import { Navbar } from "./Navbar";
 import Footer from "./Footer";
 import { useUser } from "@/providers/user-provider";
 
-function PublicLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return (
-    <div className={cn("bg-background font-sans antialiased")}>
-      <div className="relative max-w-[1440px] mx-auto">
-        <Navbar />
-        <main className="flex min-h-screen">
-          <aside className="w-1/4 dark:bg-muted-background border-r-1"></aside>
-          <div className="flex-1 px-6 pt-24">{children}</div>
-        </main>
-        <Footer />
-      </div>
-    </div>
-  );
+interface BaseLayoutProps {
+  children: React.ReactNode;
+  showFooter?: boolean;
+  showSidebar?: boolean;
+  sidebarOverflow?: boolean;
+  mainClassName?: string;
+  containerClassName?: string;
 }
 
-function PublicAppLayout({
+function BaseLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+  showFooter = true,
+  showSidebar = false,
+  sidebarOverflow = false,
+  mainClassName = "",
+  containerClassName = "",
+}: BaseLayoutProps) {
   return (
-    <div className={cn("min-h-screen bg-background font-sans antialiased")}>
+    <div
+      className={cn("bg-background font-sans antialiased", containerClassName)}
+    >
       <div className="relative max-w-[1440px] mx-auto">
         <Navbar />
-        <main className="px-16 flex">
-          <aside className="w-64 dark:bg-muted-background"></aside>
-          <div className="flex-1 p-6">{children}</div>
+        <main className={cn("flex min-h-screen", mainClassName)}>
+          {showSidebar && (
+            <aside
+              className={cn(
+                "w-1/4 border-r-1 bg-[linear-gradient(to_right,oklch(0.1715_0.0211_275.24),oklch(0.2064_0.0338_265.53))]",
+                sidebarOverflow ? "overflow-hidden" : ""
+              )}
+            />
+          )}
+          <div className={cn(showSidebar ? "flex-1 p-12" : "")}>{children}</div>
         </main>
-        <Footer />
+        {showFooter && <Footer />}
       </div>
     </div>
   );
 }
 
-function LandingPageLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={cn("min-h-screen bg-background font-sans antialiased")}>
-      <div className="relative max-w-[1440px] mx-auto">
-        <Navbar />
-        <main className="flex items-center justify-center min-h-[90dvh]">
-          <div>{children}</div>
-        </main>
-        <Footer />
-      </div>
-    </div>
+    <BaseLayout showSidebar mainClassName="min-h-screen">
+      <div className="flex-1 px-12">{children}</div>
+    </BaseLayout>
   );
 }
 
-function AuthLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+function PublicAppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={cn("min-h-screen bg-background font-sans antialiased")}>
-      <div className="relative max-w-[1440px] mx-auto">
-        <Navbar />
-        <main className="flex items-center justify-center min-h-[90dvh]">
-          <div>{children}</div>
-        </main>
-      </div>
-    </div>
+    <BaseLayout showSidebar sidebarOverflow>
+      {children}
+    </BaseLayout>
   );
 }
 
-function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
+function LandingPageLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <BaseLayout
+      containerClassName="min-h-screen"
+      mainClassName="items-center justify-center min-h-[90dvh]"
+    >
+      <div>{children}</div>
+    </BaseLayout>
+  );
+}
+
+function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <BaseLayout
+      showFooter={false}
+      containerClassName="min-h-screen"
+      mainClassName="items-center justify-center min-h-[90dvh]"
+    >
+      <div>{children}</div>
+    </BaseLayout>
+  );
+}
+
+function Layout({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
-  if (user) return <PublicAppLayout>{children}</PublicAppLayout>;
-  return <PublicLayout>{children}</PublicLayout>;
+  return user ? (
+    <PublicAppLayout>{children}</PublicAppLayout>
+  ) : (
+    <PublicLayout>{children}</PublicLayout>
+  );
 }
 
 export { Layout, LandingPageLayout, AuthLayout };

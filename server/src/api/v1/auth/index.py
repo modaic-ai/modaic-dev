@@ -1,7 +1,6 @@
 from src.lib.logger import logger
 from pydantic import BaseModel
 from typing import Optional
-from fastapi import BackgroundTasks
 from fastapi import APIRouter
 from src.api.v1.auth.utils import manager
 from fastapi import Depends, HTTPException, Request
@@ -15,10 +14,8 @@ from src.objects.index import (
     UpdateUserRequest,
 )
 from src.db.pg import get_db
-from src.utils.date import now
 from sqlalchemy.orm import Session
 from src.utils.user import generate_username
-from src.service.index import user_service, repo_service
 from src.lib.stytch import client as stytch_client, StytchError
 
 router = APIRouter()
@@ -175,7 +172,7 @@ def register(registerRequest: RegisterRequest, db: Session = Depends(get_db)):
             fullName=registerRequest.fullName,
         )
 
-        user_to_create = UserSchema(
+        user_to_create = User(
             userId=create_user_request.userId,
             username=create_user_request.username,
             email=create_user_request.email,
@@ -200,7 +197,10 @@ def register(registerRequest: RegisterRequest, db: Session = Depends(get_db)):
         return JSONResponse(content=response)
 
     except Exception as e:
-        logger.error(f"Unexpected error in register endpoint: {str(e)}")
+        db.rollback()
+        logger.error(
+            f"Unexpected error in register endpoint: {str(e)}. Database was rolled back!"
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

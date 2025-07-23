@@ -120,8 +120,12 @@ const config = {
         fadeIn: "fadeIn 0.3s ease-out",
       },
       fontFamily: {
-        grotesk: ["Space Grotesk"],
-        noto: ["Noto Sans Sunuwar"],
+        grotesk: ["var(--font-grotesk)"],
+        "noto-sans-sunuwar": ["var(--font-noto-sans-sunuwar)"],
+      },
+      backgroundImage: {
+        "muted-gradient":
+          "linear-gradient(to right, oklch(0.1715 0.0211 275.24), oklch(0.2064 0.0338 265.53))",
       },
     },
   },

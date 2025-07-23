@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { AgentList } from "@/components/agent/AgentList";
-import { ApiKeyManager } from "@/components/user/ApiKeyManager";
+import { ApiKeyManager } from "@/components/user/api-key-manager";
 import { useUserAgents } from "@/hooks/agent";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";

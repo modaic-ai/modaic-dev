@@ -6,14 +6,13 @@ from src.lib.logger import logger
 from src.objects.index import (
     UserSchema,
     User,
-    RepoSchema,
-    Repo,
+    AgentSchema,
+    Agent,
     ContributorSchema,
     Contributor,
 )
-from src.db.pg import get_db_session
-
-db = get_db_session()
+from src.db.pg import get_db
+from sqlalchemy.orm import Session
 
 
 # --- Authentication Error ---
@@ -66,14 +65,18 @@ class StytchAuthenticator:
 
 class UserRepository:
     @staticmethod
-    def find_user_by_stytch_data(stytch_user: StytchUser) -> UserSchema:
-        user_id = stytch_user.user_id
-        user = db.query(User).filter(User.userId == user_id).first()
-        if not user:
-            raise AuthenticationError(
-                "UserModel not found in local system after authentication"
-            )
-        return UserSchema(**user)
+    def find_user_by_stytch_data(stytch_user: StytchUser, db: Session) -> UserSchema:
+        try:
+            user_id = stytch_user.user_id
+            user = db.query(User).filter(User.userId == user_id).first()
+            if not user:
+                raise AuthenticationError(
+                    "UserModel not found in local system after authentication"
+                )
+            return UserSchema.model_validate(user)
+        except Exception as e:
+            db.rollback()
+            raise e
 
 
 class AccessLevel(str, Enum):
@@ -89,7 +92,7 @@ class AuthService:
         self.user_repo = UserRepository()
 
     def _authenticate_token(
-        self, token: str, auth_method: str, is_bearer: bool
+        self, token: str, auth_method: str, is_bearer: bool, db: Session
     ) -> UserSchema:
         try:
             stytch_user = (
@@ -97,7 +100,7 @@ class AuthService:
                 if is_bearer
                 else self.stytch_auth.authenticate_session_jwt(token)
             )
-            user = self.user_repo.find_user_by_stytch_data(stytch_user)
+            user = self.user_repo.find_user_by_stytch_data(stytch_user, db)
             logger.info(
                 f"Authenticated user_id: {stytch_user.user_id} via {auth_method}"
             )
@@ -111,43 +114,48 @@ class AuthService:
         self,
         authorization: Optional[str] = None,
         stytch_session_jwt: Optional[str] = None,
+        db: Session = None,
     ) -> UserSchema:
         bearer_result = self.token_extractor.extract_bearer_token(authorization)
         if bearer_result:
             token, auth_method = bearer_result
-            return self._authenticate_token(token, auth_method, is_bearer=True)
+            return self._authenticate_token(token, auth_method, is_bearer=True, db=db)
         cookie_result = self.token_extractor.extract_cookie_token(stytch_session_jwt)
         if cookie_result:
             token, auth_method = cookie_result
-            return self._authenticate_token(token, auth_method, is_bearer=False)
+            return self._authenticate_token(token, auth_method, is_bearer=False, db=db)
         raise AuthenticationError(
             f"Not authenticated: Missing token: {authorization}, {stytch_session_jwt}"
         )
 
-    def check_repo_access(
-        self, user: Optional[UserSchema], repo_id: str, required_level: AccessLevel
+    def check_agent_access(
+        self,
+        user: Optional[UserSchema],
+        agent_id: str,
+        required_level: AccessLevel,
+        db_session: Session,
     ):
-        repo = db.query(Repo).filter(Repo.repoId == repo_id).first()
-        if not repo:
-            raise HTTPException(status_code=404, detail="Repo not found")
+        agent = db_session.query(Agent).filter(Agent.agentId == agent_id).first()
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
 
-        repo = RepoSchema(**repo)
+        agent = AgentSchema(**agent)
         # admin has all access levels
-        if user and repo.adminId == user.userId:
+        if user and agent.adminId == user.userId:
             return
 
-        # for public repos, everyone gets read access
-        if repo.visibility == "Public" and required_level == AccessLevel.READ:
+        # for public agents, everyone gets read access
+        if agent.visibility == "Public" and required_level == AccessLevel.READ:
             return
 
         if not user:
             raise HTTPException(status_code=403, detail="Not authorized")
 
-        # for all other cases (private repos or write/admin access), check contributor status
+        # for all other cases (private agents or write/admin access), check contributor status
         contributor = (
-            db.query(Contributor)
+            db_session.query(Contributor)
             .filter(
-                Contributor.repoId == repo_id,
+                Contributor.agentId == agent_id,
                 Contributor.userId == user.userId,
             )
             .first()
@@ -183,9 +191,10 @@ auth_service = AuthService()
 async def get_current_user_from_token(
     authorization: Optional[str] = Header(None),
     stytch_session_jwt: Optional[str] = Cookie(None),
+    db: Session = Depends(get_db),
 ) -> UserSchema:
     try:
-        return auth_service.authenticate_user(authorization, stytch_session_jwt)
+        return auth_service.authenticate_user(authorization, stytch_session_jwt, db)
     except AuthenticationError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
@@ -193,9 +202,10 @@ async def get_current_user_from_token(
 async def get_optional_user_from_token(
     authorization: Optional[str] = Header(None),
     stytch_session_jwt: Optional[str] = Cookie(None),
+    db: Session = Depends(get_db),
 ) -> Optional[UserSchema]:
     try:
-        return auth_service.authenticate_user(authorization, stytch_session_jwt)
+        return auth_service.authenticate_user(authorization, stytch_session_jwt, db)
     except AuthenticationError as e:
         if e.status_code == 401:
             logger.info(f"Optional authentication failed: {e.message}")
@@ -204,24 +214,26 @@ async def get_optional_user_from_token(
 
 
 # --- Dependency Factory ---
-def require_repo_access_level(required_level: AccessLevel) -> Callable:
+def require_agent_access_level(required_level: AccessLevel) -> Callable:
     async def dependency(
-        repo_id: str,
+        agent_id: str,
         user: Optional[UserSchema] = Depends(get_current_user_from_token),
+        db: Session = Depends(get_db),
     ) -> Optional[UserSchema]:
-        auth_service.check_repo_access(user, repo_id, required_level)
+        auth_service.check_agent_access(user, agent_id, required_level, db)
         return user
 
     return dependency
 
 
-# --- NEW: Optional Repo Access Factory ---
-def optional_repo_access_level(required_level: AccessLevel) -> Callable:
+# --- NEW: Optional Agent Access Factory ---
+def optional_agent_access_level(required_level: AccessLevel) -> Callable:
     async def dependency(
-        repo_id: str,
+        agent_id: str,
         user: Optional[UserSchema] = Depends(get_optional_user_from_token),
+        db: Session = Depends(get_db),
     ) -> Optional[UserSchema]:
-        auth_service.check_repo_access(user, repo_id, required_level)
+        auth_service.check_agent_access(user, agent_id, required_level, db)
         return user
 
     return dependency
@@ -237,35 +249,41 @@ class AuthManager:
     class Required:
         def __init__(self):
             # these are now direct dependency functions, not callable classes
-            self.READ = require_repo_access_level(AccessLevel.READ)
-            self.WRITE = require_repo_access_level(AccessLevel.WRITE)
-            self.ADMIN = require_repo_access_level(AccessLevel.ADMIN)
+            self.READ = require_agent_access_level(AccessLevel.READ)
+            self.WRITE = require_agent_access_level(AccessLevel.WRITE)
+            self.ADMIN = require_agent_access_level(AccessLevel.ADMIN)
 
         async def __call__(
             self,
             authorization: Optional[str] = Header(None),
             stytch_session_jwt: Optional[str] = Cookie(None),
+            db: Session = Depends(get_db),
         ) -> UserSchema:
             """
             For basic authentication without repo access check.
             Usage: Depends(manager.required)
             """
             try:
-                return auth_service.authenticate_user(authorization, stytch_session_jwt)
+                return auth_service.authenticate_user(
+                    authorization, stytch_session_jwt, db
+                )
             except AuthenticationError as e:
                 raise HTTPException(status_code=e.status_code, detail=e.message)
 
     class Optional:
         def __init__(self):
-            # use the new optional repo access factory
-            self.READ = optional_repo_access_level(AccessLevel.READ)
+            # use the new optional agent access factory
+            self.READ = optional_agent_access_level(AccessLevel.READ)
 
         async def __call__(
             self,
             authorization: Optional[str] = Header(None),
             stytch_session_jwt: Optional[str] = Cookie(None),
+            db: Session = Depends(get_db),
         ) -> Optional[UserSchema]:
-            return await get_optional_user_from_token(authorization, stytch_session_jwt)
+            return await get_optional_user_from_token(
+                authorization, stytch_session_jwt, db
+            )
 
 
 manager = AuthManager()

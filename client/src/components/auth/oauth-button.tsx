@@ -1,14 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { googleIcon } from "@/components/auth/icons";
 import { useStytch } from "@stytch/nextjs";
-import { environment } from "@/environment"
+import { environment } from "@/environment";
 
 export const OAuthButton = () => {
   const client = useStytch();
+  const redirectUrl = environment.client_url + "/auth/authenticate";
+  console.log("handleGoogleSignIn at ", redirectUrl);
   const handleGoogleSignIn = () => {
     client.oauth.google.start({
-      login_redirect_url: `${environment.client_url}/auth/authenticate`,
-      signup_redirect_url: `${environment.client_url}/auth/authenticate`,
+      login_redirect_url: redirectUrl,
+      signup_redirect_url: redirectUrl,
     });
   };
 
