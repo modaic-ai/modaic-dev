@@ -1,8 +1,9 @@
 import axios from "axios";
 import { environment } from "@/environment";
 
+const API_URL = environment.api_url || "https://api.modaic.dev";
 const api = axios.create({
-  baseURL: environment.api_url + "/api/v1",
+  baseURL: API_URL + "/api/v1",
   headers: {
     "Content-Type": "application/json",
   },

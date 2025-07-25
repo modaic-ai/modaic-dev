@@ -44,13 +44,18 @@ export const fontWorkSans = Work_Sans({
 });
 
 const queryClient = new QueryClient();
-const stytch = createStytchUIClient(environment.stytch_public_token as string,
+const stytch = createStytchUIClient(
+  environment.stytch_public_token ||
+    "public-token-live-10fa561d-45c0-4053-945c-b69bbc434f47",
   {
-  cookieOptions: {
-    availableToSubdomains: true,
-    domain: environment.client_url?.replace("https://", "").replace("www.", ""),
-  },
-});
+    cookieOptions: {
+      availableToSubdomains: true,
+      domain:
+        environment.client_url?.replace("https://", "").replace("www.", "") ||
+        "www.modaic.dev",
+    },
+  }
+);
 
 export default function App({ Component, pageProps }: AppPropsWithLayout) {
   const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
