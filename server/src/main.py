@@ -30,9 +30,18 @@ async def lifespan(app: FastAPI):
     yield
 
 
+origins = [
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "https://modaic.dev",
+    "https://www.modaic.dev",
+    "https://api.modaic.dev",
+    "https://git.modaic.dev",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
