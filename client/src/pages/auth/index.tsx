@@ -1,6 +1,6 @@
 import { useState, useEffect, ReactElement } from "react";
 import Head from "next/head";
-import { AuthLayout } from "@/layouts/PublicLayout";
+import { AuthLayout } from "@/layouts/Layout";
 import { AuthHeader } from "@/components/auth/auth-header";
 import { EmailStepForm } from "@/components/auth/email-step-form";
 import { LoginForm } from "@/components/auth/login-form";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useCheckEmailExists } from "@/hooks/user";
 import { useSubmitRegister } from "@/hooks/auth";
 import { useUser } from "@/providers/user-provider";
+import { useRouter } from "next/router";
 
 const emailSchema = z.object({ email: z.email() });
 const loginSchema = z.object({
@@ -36,6 +37,7 @@ function AuthPage() {
   const [userEmail, setUserEmail] = useState("");
   const client = useStytch();
   const { user } = useUser();
+  const router = useRouter();
 
   const { mutateAsync: checkEmailExists, isPending: isCheckingEmail } =
     useCheckEmailExists();
@@ -114,6 +116,10 @@ function AuthPage() {
     }
   };
 
+  if (user) {
+    router.push("/agents");
+  }
+
   return (
     <div className="h-[90dvh] flex flex-col justify-center items-center">
       <Head>
@@ -147,7 +153,5 @@ function AuthPage() {
   );
 }
 
-AuthPage.getLayout = (page: ReactElement) => (
-  <AuthLayout>{page}</AuthLayout>
-);
+AuthPage.getLayout = (page: ReactElement) => <AuthLayout>{page}</AuthLayout>;
 export default AuthPage;

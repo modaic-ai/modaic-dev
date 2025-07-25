@@ -1,5 +1,5 @@
 import { ReactElement } from "react";
-import { Layout } from "@/layouts/PublicLayout";
+import { Layout } from "@/layouts/Layout";
 
 function About() {
   return <div>About</div>;

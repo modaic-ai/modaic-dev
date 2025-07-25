@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { AgentDetail } from "@/components/agent/agent-detail";
 import { useGetAgent } from "@/hooks/agent";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Layout } from "@/layouts/PublicLayout";
+import { Layout, ProfileLayout } from "@/layouts/Layout";
 import { NextPageWithLayout } from "@/pages/_app";
 
 const AgentPage: NextPageWithLayout = () => {
@@ -96,6 +96,6 @@ const AgentPage: NextPageWithLayout = () => {
   return <AgentDetail agent={agent} />;
 };
 
-AgentPage.getLayout = (page) => <Layout>{page}</Layout>;
+AgentPage.getLayout = (page) => <ProfileLayout>{page}</ProfileLayout>;
 
 export default AgentPage;

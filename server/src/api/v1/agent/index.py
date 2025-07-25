@@ -12,24 +12,36 @@ from sqlalchemy import or_, desc
 from typing import List
 from src.lib.logger import logger
 from src.db.pg import get_db
+from src.api.v1.auth.utils import manager
 
 router = APIRouter()
 
 
 @router.get("/user/{username}", response_model=List[PublicAgentSchema])
-def get_user_agents(username: str, db: Session = Depends(get_db)):
+def get_user_agents(username: str, db: Session = Depends(get_db), user: UserSchema = Depends(manager.required)):
     """Get all agents for a specific user"""
     try:
-
-        user = db.query(User).filter(User.username == username).first()
-        if not user:
+        resource_owner = db.query(User).filter(User.username == username).first()
+        if not resource_owner:
+            logger.error(f"User not found: {username}")
             raise HTTPException(status_code=404, detail="User not found")
 
-        user = UserSchema(**user)
-        agents = db.query(Agent).filter(Agent.adminId == user.userId).all()
-        agents = [PublicAgentSchema(**agent) for agent in agents]
-
-        return JSONResponse(content=agents)
+        logger.info(f"User found by username: {resource_owner.username}")
+        authorized = user.userId == resource_owner.userId
+        
+        # show public agents for everyone, all agents if authorized
+        if authorized:
+            agents = db.query(Agent).filter(Agent.adminId == resource_owner.userId).all()
+        else:
+            agents = db.query(Agent).filter(
+                Agent.adminId == resource_owner.userId, 
+                Agent.visibility == "public"
+            ).all()
+            
+        logger.info(f"Found {len(agents)} agents for user")
+        
+        validated_agents = [PublicAgentSchema.model_validate(agent) for agent in agents]
+        return validated_agents
 
     except Exception as e:
         logger.error(f"Failed to get user agents: {str(e)}")

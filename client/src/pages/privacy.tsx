@@ -1,6 +1,6 @@
 import React from "react";
 import { ReactElement } from "react";
-import { Layout } from "@/layouts/PublicLayout";
+import { Layout } from "@/layouts/Layout";
 
 function Privacy() {
   return <div>Privacy</div>;

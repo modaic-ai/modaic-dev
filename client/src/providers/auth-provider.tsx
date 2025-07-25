@@ -1,9 +1,20 @@
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, ComponentType } from "react";
 import { useStytchUser } from "@stytch/nextjs";
+import { LoadingState } from "@/pages/[entity-name]";
 
-export default function withAuth(Component: any) {
-  return function AuthenticatedComponent(props: any) {
+interface WithAuthProps {
+  [key: string]: any;
+}
+
+type ComponentWithLayout = ComponentType<any> & {
+  getLayout?: (page: React.ReactElement) => React.ReactNode;
+};
+
+export default function withAuth<T extends WithAuthProps>(
+  Component: ComponentWithLayout
+) {
+  function AuthenticatedComponent(props: T) {
     const router = useRouter();
     const { user, isInitialized } = useStytchUser();
 
@@ -14,9 +25,30 @@ export default function withAuth(Component: any) {
       }
     }, [isInitialized, user, router]);
 
-    if (!user) {
-      return null;
+    if (!isInitialized) {
+      return (
+        <div className="flex justify-center items-center h-screen">
+          <LoadingState />
+        </div>
+      );
     }
+
+    if (!user) {
+      return (
+        <div className="flex justify-center items-center h-screen">
+          <LoadingState />
+        </div>
+      );
+    }
+
     return <Component {...props} />;
-  };
+  }
+
+  if (Component.getLayout) {
+    AuthenticatedComponent.getLayout = Component.getLayout;
+  }
+
+  AuthenticatedComponent.displayName = `withAuth(${Component.displayName || Component.name})`;
+
+  return AuthenticatedComponent;
 }

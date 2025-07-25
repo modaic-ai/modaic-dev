@@ -32,7 +32,7 @@ function UserAvatar({
   const imageDisplay = (
     <div
       className={cn(
-        "rounded-full overflow-hidden border transition-all duration-200 ease-in-out hover:border-2 hover:border-sky-500 cursor-pointer",
+        `rounded-full overflow-hidden border transition-all duration-200 ease-in-out ${deactive ? "" : "hover:border-2 hover:border-sky-500 cursor-pointer"}`,
         className
       )}
       style={{ width: dimension, height: dimension }}

@@ -2,7 +2,6 @@ import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { useState, useEffect, type ReactElement, type ReactNode } from "react";
 import type { NextPage } from "next";
-import { Inter as FontSans } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
 import { Noto_Sans_Sunuwar } from "next/font/google";
 import { Work_Sans } from "next/font/google";
@@ -13,10 +12,10 @@ import { environment } from "@/environment";
 import { Analytics } from "@vercel/analytics/react";
 import { toast } from "sonner";
 import { handleLinkedInWebView } from "@/lib/utils";
-import { Toaster as SonnerToaster } from "sonner";
+import { Toaster } from "sonner";
 import Head from "next/head";
 import { ThemeProvider } from "@/providers/theme-proivder";
-import { Layout } from "@/layouts/PublicLayout";
+import { Layout } from "@/layouts/Layout";
 import { UserProvider } from "@/providers/user-provider";
 
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
@@ -26,12 +25,6 @@ export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
 };
-
-const fontSans = FontSans({
-  weight: ["400", "500", "600", "700", "800", "900"],
-  subsets: ["latin"],
-  variable: "--font-mono",
-});
 
 export const fontGrotesk = Space_Grotesk({
   weight: ["300", "400", "500", "600", "700"],
@@ -101,10 +94,10 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
   }, [toast, toastId]);
 
   return (
-    <StytchProvider stytch={stytch}>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <StytchProvider stytch={stytch}>
         <Head>
-          <title>The AI Application Platform | Modaic</title>
+          <title>Modaic - The AI Application Platform</title>
           <meta
             name="description"
             content="The internet wasn't made for AI. The new era of software requires bottom-up infrastructure to build lasting AI solutions."
@@ -131,17 +124,15 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
             {getLayout(
               <>
                 <Analytics />
-                <div
-                  className={`${fontWorkSans.className} overflow-hidden`}
-                >
+                <div className={`${fontWorkSans.className} overflow-hidden`}>
                   <Component {...pageProps} />
-                  <SonnerToaster />
+                  <Toaster />
                 </div>
               </>
             )}
           </UserProvider>
         </ThemeProvider>
-      </QueryClientProvider>
-    </StytchProvider>
+      </StytchProvider>
+    </QueryClientProvider>
   );
 }

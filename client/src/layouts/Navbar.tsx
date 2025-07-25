@@ -17,11 +17,12 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { BoxIcon, CommunityIcon, DocsIcon } from "./icons";
 import UserAvatar from "@/components/user/user-avatar";
-import { useCheckLoggedInUser, useLogout } from "@/hooks/user";
+import { useLogout } from "@/hooks/user";
 import { useRouter } from "next/router";
+import { useUser } from "@/providers/user-provider";
 
 export function Navbar() {
-  const { data: user } = useCheckLoggedInUser();
+  const { user } = useUser();
   const { mutate: logout } = useLogout();
   return (
     <div className="bg-background z-50">
@@ -31,7 +32,7 @@ export function Navbar() {
       >
         <NavigationMenuList>
           <NavigationMenuItem className="flex items-center">
-            <NavigationMenuLink href="/">
+            <NavigationMenuLink href={user ? `/agents` : "/"}>
               <div className="flex gap-1 items-center -ml-1 justify-center h-full rounded-full pr-1">
                 <Image
                   src={"/mosaicnobg.png"}
@@ -56,7 +57,7 @@ export function Navbar() {
               href="/agents"
               className={navigationMenuTriggerStyle()}
             >
-              <div className="group flex gap-2 items-center">
+              <div className="group flex gap-2 items-center text-muted-foreground">
                 <BoxIcon />
                 Agents
               </div>
@@ -68,7 +69,7 @@ export function Navbar() {
               href="/auth"
               className={navigationMenuTriggerStyle()}
             >
-              <div className="group flex gap-2 items-center">
+              <div className="group flex gap-2 items-center text-muted-foreground">
                 <CommunityIcon />
                 Community
               </div>
@@ -80,18 +81,21 @@ export function Navbar() {
               href="/docs"
               className={navigationMenuTriggerStyle()}
             >
-              <div className="group flex gap-2 items-center">
+              <div className="group flex gap-2 items-center text-muted-foreground">
                 <DocsIcon />
                 Docs
               </div>
             </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <NavigationMenuTrigger className="cursor-pointer" hideChevron>
-              <List size={16} />
+            <NavigationMenuTrigger
+              className="cursor-pointer text-muted-foreground"
+              hideChevron
+            >
+              <List size={14} />
             </NavigationMenuTrigger>
             <NavigationMenuContent>
-              <ul className="grid w-[200px] gap-4">
+              <ul className="grid w-[200px] gap-4 text-muted-foreground">
                 <li>
                   <NavigationMenuLink className="rounded-md" asChild>
                     <Link href="#">
@@ -113,7 +117,7 @@ export function Navbar() {
             </NavigationMenuContent>
           </NavigationMenuItem>
 
-          <div className="h-full bg-border text-foreground w-[1px]">
+          <div className="h-full bg-border text-foreground rounded-full w-[2px]">
             <p className="opacity-0">.</p>
           </div>
           {renderUserMenu(user, logout)}
@@ -164,9 +168,9 @@ const renderUserMenu = (user: any, logout: any) => {
           <li>
             <NavigationMenuLink
               className="rounded-md text-lg font-bold flex flex-col"
-              href="#"
+              href={`/${user.username}`}
             >
-              <span className="text-sm font-semibold text-muted-foreground">
+              <span className="text-xs font-semibold dark:text-muted-foreground">
                 Profile
               </span>
               <div className="flex flex-row items-center gap-2 hover:underline">
@@ -177,21 +181,25 @@ const renderUserMenu = (user: any, logout: any) => {
           </li>
           <li>
             <NavigationMenuLink
-              className="rounded-md font-semibold hover:underline"
-              href="#"
+              className="rounded-md text-sm dark:text-muted-foreground font-semibold hover:underline"
+              href="/settings/account"
             >
-              Settings
+              <span className="text-sm font-semibold dark:text-muted-foreground">
+                Settings
+              </span>
             </NavigationMenuLink>
           </li>
           <li>
             <NavigationMenuLink
-              className="rounded-md font-semibold hover:underline"
+              className="rounded-md text-sm dark:text-muted-foreground font-semibold hover:underline"
               onClick={() => {
                 logout();
                 router.push("/");
               }}
             >
-              <span>Sign Out</span>
+              <span className="text-sm font-semibold dark:text-muted-foreground">
+                Sign Out
+              </span>
             </NavigationMenuLink>
           </li>
         </ul>

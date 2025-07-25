@@ -5,10 +5,11 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import { LandingPageLayout } from "@/layouts/PublicLayout";
+import { LandingPageLayout } from "@/layouts/Layout";
 import { ReactElement } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
+import { useUser } from "@/providers/user-provider";
 
 // Custom hook for requestAnimationFrame
 const useAnimationFrame = (
@@ -212,7 +213,14 @@ const WaterAscii: React.FC = () => {
 };
 
 function Home() {
+
   const router = useRouter();
+  const { user } = useUser();
+  useEffect(() => {
+    if (user) {
+      router.push("/agents");
+    }
+  }, []);
 
   return (
     <div className="relative w-full h-full border rounded-lg overflow-hidden">

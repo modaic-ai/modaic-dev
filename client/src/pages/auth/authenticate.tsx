@@ -1,5 +1,5 @@
 import { ReactElement, useCallback, useEffect, useRef, useState } from "react";
-import { AuthLayout } from "@/layouts/PublicLayout";
+import { AuthLayout } from "@/layouts/Layout";
 import { useStytch } from "@stytch/nextjs";
 import { useCompleteOauth } from "@/hooks/auth";
 import { toast } from "sonner";
@@ -64,9 +64,7 @@ const GoogleCallback = () => {
         } else if (redirectUrl) {
           window.location.href = redirectUrl;
         } else {
-          window.location.href = user
-            ? `/agents`
-            : "/agents";
+          window.location.href = user ? `/agents` : "/agents";
         }
       } else {
         throw new Error("No session or user returned from Stytch");
@@ -97,13 +95,7 @@ const GoogleCallback = () => {
         <p className="text-lg mb-4">
           {isProcessing ? "Logging you in..." : "Preparing authentication..."}
         </p>
-        {isProcessing && (
-          <JellyTriangle
-            size="30"
-            speed="1.75"
-            color="white"
-          />
-        )}
+        {isProcessing && <JellyTriangle size="30" speed="1.75" color="white" />}
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Layout } from "@/layouts/PublicLayout";
+import { Layout } from "@/layouts/Layout";
 
 function AgentsPage() {
   const [searchQuery, setSearchQuery] = useState("");

@@ -1,5 +1,16 @@
 
-export type UserModel = {
+export type OrganizationType = {
+    organizationId: string;
+    name: string;
+    description: string;
+    created: Date;
+    updated: Date;
+    imageKey: string | null;
+    fullName: string | null;
+    profilePictureUrl: string | null;
+};
+
+export type UserType = {
     userId: string;
     username: string;
     email: string;
@@ -8,10 +19,9 @@ export type UserModel = {
     imageKey: string | null;
     fullName: string | null;
     profilePictureUrl: string | null;
-    giteaUserId: number | null;
-    giteaTokenEncrypted: string | null;
-    apiKey: string | null;
 };
+
+export type EntityType = UserType | OrganizationType;
 
 export type CreateUserRequest = {
     userId: string;
@@ -35,7 +45,7 @@ export type DeleteUserRequest = {
     userId: string;
 };
 
-export type PublicUser = {
+export type PublicUserType = {
     userId: string;
     username: string;
     email: string;
