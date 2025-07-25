@@ -131,4 +131,4 @@ function Layout({ children }: { children: React.ReactNode }) {
   return <PublicLayout>{children}</PublicLayout>;
 }
 
-export { Layout, LandingPageLayout, AuthLayout, SettingsLayout, ProfileLayout };
+export { Layout, PublicLayout, LandingPageLayout, AuthLayout, SettingsLayout, ProfileLayout };
