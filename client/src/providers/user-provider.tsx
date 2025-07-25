@@ -1,9 +1,8 @@
 import { createContext, useContext, ReactNode } from "react";
-import { PublicUser } from "@/types/user";
 import { useCheckLoggedInUser, useLogout } from "@/hooks/user";
 
 type UserContextType = {
-  user: PublicUser | null | undefined;
+  user: any
   handleLogout: () => void;
   userLoading: boolean;
   refetchUser: () => void;
