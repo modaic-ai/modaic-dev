@@ -22,9 +22,13 @@ class User(Base):
     updated = Column(String(50), nullable=False, default=now)
     fullName = Column(String(255), nullable=True)
     profilePictureUrl = Column(String(500), nullable=True)
-    giteaUserId = Column(Integer, nullable=True, unique=True)
-    giteaTokenEncrypted = Column(String(1000), nullable=True)
-    apiKey = Column(String(100), nullable=True, unique=True)
+
+    #new fields
+    bio = Column(String(1000), nullable=True)
+    githubUrl = Column(String(500), nullable=True)
+    linkedinUrl = Column(String(500), nullable=True)
+    xUrl = Column(String(500), nullable=True)
+    websiteUrl = Column(String(500), nullable=True)
 
     # relationships
     owned_agents = relationship(
@@ -115,14 +119,9 @@ class User(Base):
             '"profilePictureUrl" IS NULL OR "profilePictureUrl" ~ \'^https?://\'',
             name="check_profile_url_format",
         ),
-        CheckConstraint(
-            '"giteaUserId" IS NULL OR "giteaUserId" > 0',
-            name="check_gitea_user_id_positive",
-        ),
         Index("idx_user_created", "created"),
         Index("idx_user_updated", "updated"),
         Index("idx_user_fullname", "fullName"),
-        Index("idx_user_gitea_id", "giteaUserId"),
     )
 
     def __repr__(self):

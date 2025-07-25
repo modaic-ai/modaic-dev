@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,14 +20,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUser } from "@/providers/user-provider";
 import { GithubIcon, XIcon } from "@/layouts/icons";
 import { Link, Linkedin } from "lucide-react";
+import { useUpdateUser } from "@/hooks/user";
+
+const optionalUrl = z.string().url().or(z.literal(""));
 
 const profileFormSchema = z.object({
-  fullName: z.string().min(2).max(128),
-  bio: z.string("Please enter a bio").max(160).min(4),
-  github: z.url("Please enter a link to your github").optional(),
-  linkedin: z.url("Please enter a link to your linkedin").optional(),
-  twitter: z.url("Please enter a link to your twitter").optional(),
-  website: z.url("Please enter a link to your website").optional(),
+  fullName: z.string().min(2, "Name must be at least 2 characters long").max(128, "Name must be at most 128 characters long").optional(),
+  bio: z.string("Please enter a bio").max(160, "Bio must be at most 160 characters long").min(4, "Bio must be at least 4 characters long").optional(),
+  githubUrl: optionalUrl,
+  linkedinUrl: optionalUrl,
+  xUrl: optionalUrl,
+  websiteUrl: optionalUrl,
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -38,24 +40,22 @@ export function ProfileForm() {
   const defaultValues: Partial<ProfileFormValues> = {
     fullName: user?.fullName,
     bio: user?.bio,
-    github: user?.github,
-    linkedin: user?.linkedin,
-    twitter: user?.twitter,
-    website: user?.website,
+    githubUrl: user?.githubUrl,
+    linkedinUrl: user?.linkedinUrl,
+    xUrl: user?.xUrl,
+    websiteUrl: user?.websiteUrl,
   };
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues,
-    mode: "onChange",
+    mode: "onSubmit",
   });
+  const { mutateAsync: updateUser } = useUpdateUser();
 
   function onSubmit(data: ProfileFormValues) {
-    toast("You submitted the following values:", {
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
+    updateUser({
+      userId: user?.userId,
+      ...data,
     });
   }
 
@@ -83,7 +83,9 @@ export function ProfileForm() {
           )}
         />
         <div>
-          <div className="mb-2 text-[14px] font-medium tracking-tight leading-none">Avatar (optional)</div>
+          <div className="mb-2 text-[14px] font-medium tracking-tight leading-none">
+            Avatar (optional)
+          </div>
           <div>
             <div className="flex items-center w-fit">
               <Input
@@ -127,7 +129,7 @@ export function ProfileForm() {
         />
         <FormField
           control={form.control}
-          name="github"
+          name="githubUrl"
           render={({ field }) => (
             <FormItem>
               <FormLabel>
@@ -144,7 +146,7 @@ export function ProfileForm() {
         />
         <FormField
           control={form.control}
-          name="linkedin"
+          name="linkedinUrl"
           render={({ field }) => (
             <FormItem>
               <FormLabel>
@@ -161,24 +163,24 @@ export function ProfileForm() {
         />
         <FormField
           control={form.control}
-          name="twitter"
+          name="xUrl"
           render={({ field }) => (
             <FormItem>
               <FormLabel>
                 <XIcon className="w-3 h-3" />
-                Twitter (optional)
+                X (Formerly Twitter) (optional)
               </FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
-              <FormDescription>Add your Twitter profile URL.</FormDescription>
+              <FormDescription>Add your X profile URL.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
         <FormField
           control={form.control}
-          name="website"
+          name="websiteUrl"
           render={({ field }) => (
             <FormItem>
               <FormLabel>

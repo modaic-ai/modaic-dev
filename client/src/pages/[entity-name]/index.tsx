@@ -1,4 +1,4 @@
-import React, { ReactElement, useState } from "react";
+import React, { ReactElement } from "react";
 import { useRouter } from "next/router";
 import { useGetUserAgents } from "@/hooks/agent";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { ProfileLayout } from "@/layouts/Layout";
 import UserAvatar from "@/components/user/user-avatar";
 import { useFetchEntityByUsername } from "@/hooks/user";
-import { UserType } from "@/types/user";
+import { PublicUser } from "@/types/user";
 import { BoxIcon } from "@/layouts/icons";
 import { JellyTriangle } from "ldrs/react";
 import { ArrowRight } from "lucide-react";
@@ -74,7 +74,7 @@ function SectionItem({
   );
 }
 
-function ProfileHeader({ entity }: { entity: UserType }) {
+function ProfileHeader({ entity }: { entity: PublicUser }) {
   const { user } = useUser();
   const isAuthorized = user && entity.userId === user.userId;
   return (
@@ -94,7 +94,7 @@ function ProfileHeader({ entity }: { entity: UserType }) {
   );
 }
 
-export function ProfileSideBarContent({ entity }: { entity: UserType }) {
+export function ProfileSideBarContent({ entity }: { entity: PublicUser }) {
   return (
     <div className="w-full">
       <ProfileHeader entity={entity} />
@@ -118,7 +118,7 @@ function AgentCard({
   index,
   onCardClick,
 }: {
-  entity: UserType;
+  entity: PublicUser;
   entityName: string;
   index: number;
   onCardClick: () => void;
@@ -151,7 +151,7 @@ function AgentsSection({
   agents,
   router,
 }: {
-  entity: UserType;
+  entity: PublicUser;
   entityName: string;
   agents: any[] | undefined;
   router: any;

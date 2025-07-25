@@ -1,64 +1,43 @@
 
-export type OrganizationType = {
-    organizationId: string;
-    name: string;
-    description: string;
-    created: Date;
-    updated: Date;
-    imageKey: string | null;
-    fullName: string | null;
-    profilePictureUrl: string | null;
-};
-
-export type UserType = {
+export type PublicUser = {
     userId: string;
     username: string;
-    email: string;
-    created: Date;
-    updated: Date;
-    imageKey: string | null;
-    fullName: string | null;
-    profilePictureUrl: string | null;
-};
+    created: string;
+    profilePictureUrl?: string | null;
+    fullName?: string | null;
+    bio?: string | null;
+    githubUrl?: string | null;
+    linkedinUrl?: string | null;
+    xUrl?: string | null;
+    websiteUrl?: string | null;
+}
 
-export type EntityType = UserType | OrganizationType;
+export interface PrivateUser extends PublicUser {
+    email: string;
+    updated: string;
+}
+
+export type EntityType = PrivateUser | PublicUser;
 
 export type CreateUserRequest = {
     userId: string;
     username: string;
     email: string;
-    imageKey: string | null;
-    fullName: string | null;
-    profilePictureUrl: string | null;
+    profilePictureUrl?: string | null;
+    fullName?: string | null;
 };
 
 export type UpdateUserRequest = {
-    userId: string;
-    username: string | null;
-    email: string | null;
-    imageKey: string | null;
-    fullName: string | null;
-    profilePictureUrl: string | null;
+    fullName?: string | null;
+    profilePictureUrl?: string | null;
+    bio?: string | null;
+    githubUrl?: string | null;
+    linkedinUrl?: string | null;
+    xUrl?: string | null;
+    websiteUrl?: string | null;
 };
 
 export type DeleteUserRequest = {
     userId: string;
 };
-
-export type PublicUserType = {
-    userId: string;
-    username: string;
-    email: string;
-    created: Date;
-    updated: Date;
-    imageKey: string | null;
-    fullName: string | null;
-    profilePictureUrl: string | null;
-};
-
-export type GetUserRequest = {
-    userId: string;
-    authorized: boolean;
-};
-
     

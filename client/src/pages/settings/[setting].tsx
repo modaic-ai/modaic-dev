@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useUser } from "@/providers/user-provider";
 import withAuth from "@/providers/auth-provider";
 import UserAvatar from "@/components/user/user-avatar";
-import { UserType } from "@/types/user";
+import { PrivateUser } from "@/types/user";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { AccountForm } from "@/components/settings/account-form";
 import AccessTokensTab from "@/components/settings/access-tokens";
@@ -144,7 +144,7 @@ function UsageSetting() {
 }
 
 // Sidebar Components
-function UserSettingsHeader({ user }: { user: UserType }) {
+function UserSettingsHeader({ user }: { user: PrivateUser }) {
   return (
     <div className="px-5 py-6 flex flex-row gap-4">
       <UserAvatar userId={user.userId} dimension={70} />

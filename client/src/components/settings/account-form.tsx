@@ -59,7 +59,6 @@ const languages = [
 const accountFormSchema = z.object({
   username: z.string("Please enter a username").min(2).max(128),
   email: z.email("Please enter a valid email").min(2).max(128),
-  dob: z.date("A date of birth is required."),
   language: z.string("Please select a language."),
   timezone: z.string("Please select a timezone."),
 });
@@ -72,7 +71,6 @@ export function AccountForm() {
   const defaultValues: Partial<AccountFormValues> = {
     username: user?.username,
     email: user?.email,
-    dob: user?.dob,
     language: user?.language,
     timezone: user?.timezone,
   };
@@ -130,50 +128,6 @@ export function AccountForm() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="dob"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Date of birth</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-[240px] pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormDescription>
-                Your date of birth will not be displayed on your profile.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <div>
           <span className="text-xl text-foreground font-semibold">Preferences</span>
@@ -181,11 +135,12 @@ export function AccountForm() {
         <FormField
           control={form.control}
           name="language"
+          disabled
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Language</FormLabel>
               <Popover>
-                <PopoverTrigger asChild>
+                <PopoverTrigger disabled asChild>
                   <FormControl>
                     <Button
                       variant="outline"
@@ -244,6 +199,7 @@ export function AccountForm() {
         />
         <FormField
           name="timezone"
+          disabled
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Timezone</FormLabel>

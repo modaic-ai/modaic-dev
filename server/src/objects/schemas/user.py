@@ -15,13 +15,13 @@ class UserSchema(BaseModel):
     updated: str
     fullName: Optional[str] = Field(None, max_length=255)
     profilePictureUrl: Optional[str] = Field(None, max_length=500)
-    giteaUserId: Optional[int] = Field(None, ge=1)
-    giteaTokenEncrypted: Optional[str] = Field(
-        None, max_length=1000
-    )  # sensitive - not in public schema
-    apiKey: Optional[str] = Field(
-        None, max_length=100
-    )  # sensitive - not in public schema
+
+    #new fields
+    bio: Optional[str] = Field(None, max_length=1000)
+    githubUrl: Optional[str] = Field(None, max_length=500)
+    linkedinUrl: Optional[str] = Field(None, max_length=500)
+    xUrl: Optional[str] = Field(None, max_length=500)
+    websiteUrl: Optional[str] = Field(None, max_length=500)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -35,6 +35,13 @@ class PublicUserSchema(BaseModel):
     profilePictureUrl: Optional[str] = None
     created: str
 
+    #new fields
+    bio: Optional[str] = None
+    githubUrl: Optional[str] = None
+    linkedinUrl: Optional[str] = None
+    xUrl: Optional[str] = None
+    websiteUrl: Optional[str] = None
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -45,7 +52,13 @@ class CreateUserRequest(BaseModel):
     email: EmailStr
     fullName: Optional[str] = Field(None, max_length=255)
     profilePictureUrl: Optional[str] = Field(None, max_length=500)
-    giteaUserId: Optional[int] = Field(None, ge=1)
+
+    #new fields
+    bio: Optional[str] = Field(None, max_length=1000)
+    githubUrl: Optional[str] = Field(None, max_length=500)
+    linkedinUrl: Optional[str] = Field(None, max_length=500)
+    xUrl: Optional[str] = Field(None, max_length=500)
+    websiteUrl: Optional[str] = Field(None, max_length=500)
 
     # auto-generated fields
     created: str = Field(default_factory=lambda: now())
@@ -71,52 +84,48 @@ class CreateUserRequest(BaseModel):
 class UpdateUserRequest(BaseModel):
     """Request schema for updating user information."""
 
-    username: Optional[str] = Field(None, min_length=3, max_length=50)
-    email: Optional[EmailStr] = None
     fullName: Optional[str] = Field(None, max_length=255)
     profilePictureUrl: Optional[str] = Field(None, max_length=500)
-    giteaUserId: Optional[int] = Field(None, ge=1)
+    bio: Optional[str] = Field(None, max_length=1000)
+    githubUrl: Optional[str] = Field(None, max_length=500)
+    linkedinUrl: Optional[str] = Field(None, max_length=500)
+    xUrl: Optional[str] = Field(None, max_length=500)
+    websiteUrl: Optional[str] = Field(None, max_length=500)
 
-    # Auto-updated field
+    # auto-updated field
     updated: str = Field(default_factory=lambda: now())
-
-    @validator("username")
-    def validate_username(cls, v):
-        if v and not re.match(r"^[a-zA-Z0-9_-]+$", v):
-            raise ValueError(
-                "Username can only contain letters, numbers, hyphens, and underscores"
-            )
-        return v.lower() if v else v
 
     @validator("profilePictureUrl")
     def validate_profile_picture_url(cls, v):
         if v and not re.match(r"^https?://", v):
             raise ValueError("Profile picture URL must start with http:// or https://")
+        return v
+    
+    @validator("xUrl")
+    def validate_x_url(cls, v):
+        if v and not re.match(r"^https?://", v):
+            raise ValueError("X URL must start with http:// or https://")
+        return v
+
+    @validator("githubUrl")
+    def validate_github_url(cls, v):
+        if v and not re.match(r"^https?://", v):
+            raise ValueError("GitHub URL must start with http:// or https://")
+        return v
+
+    @validator("websiteUrl")
+    def validate_website_url(cls, v):
+        if v and not re.match(r"^https?://", v):
+            raise ValueError("Website URL must start with http:// or https://")
+        return v
+
+    @validator("linkedinUrl")
+    def validate_linkedin_url(cls, v):
+        if v and not re.match(r"^https?://", v):
+            raise ValueError("LinkedIn URL must start with http:// or https://")
         return v
 
     model_config = ConfigDict(exclude_unset=True)
-
-
-class UserProfileUpdateRequest(BaseModel):
-    """Separate schema for profile-only updates (no sensitive fields)."""
-
-    fullName: Optional[str] = Field(None, max_length=255)
-    profilePictureUrl: Optional[str] = Field(None, max_length=500)
-    updated: str = Field(default_factory=lambda: now())
-
-    @validator("profilePictureUrl")
-    def validate_profile_picture_url(cls, v):
-        if v and not re.match(r"^https?://", v):
-            raise ValueError("Profile picture URL must start with http:// or https://")
-        return v
-
-
-class UpdateUserCredentialsRequest(BaseModel):
-    """Separate schema for updating sensitive credentials."""
-
-    giteaTokenEncrypted: Optional[str] = Field(None, max_length=1000)
-    apiKey: Optional[str] = Field(None, max_length=100)
-    updated: str = Field(default_factory=lambda: now())
 
 
 class DeleteUserRequest(BaseModel):
@@ -125,15 +134,6 @@ class DeleteUserRequest(BaseModel):
     userId: str = Field(..., min_length=1, max_length=100)
     # Could add confirmation field if needed
     confirm_deletion: bool = Field(default=False)
-
-
-class GetUserRequest(BaseModel):
-    """Request schema for getting user information."""
-
-    userId: str = Field(..., min_length=1, max_length=100)
-    include_private: bool = Field(
-        default=False, description="Include private fields (owner only)"
-    )
 
 
 class UserSearchRequest(BaseModel):
@@ -162,34 +162,12 @@ class UserListResponse(BaseModel):
         return (total + size - 1) // size if total > 0 else 0
 
 
-class UserStatsSchema(BaseModel):
-    """Schema for user statistics."""
-
-    userId: str
-    username: str
-    agents_count: int = Field(default=0, ge=0)
-    stars_given: int = Field(default=0, ge=0)
-    forks_created: int = Field(default=0, ge=0)
-    contributions_count: int = Field(default=0, ge=0)
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 class UserResponse(BaseModel):
     """Standard response wrapper for user operations."""
 
     success: bool
     data: Optional[UserSchema] = None
     message: Optional[str] = None
-
-
-class PublicUserResponse(BaseModel):
-    """Standard response wrapper for public user operations."""
-
-    success: bool
-    data: Optional[PublicUserSchema] = None
-    message: Optional[str] = None
-
 
 # validation helpers
 class UserValidation:

@@ -1,13 +1,13 @@
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import {UserType, UpdateUserRequest } from "@/types/user";
+import { PrivateUser, UpdateUserRequest } from "@/types/user";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function useCheckLoggedInUser() {
   return useQuery({
     queryKey: ["user"],
-    queryFn: async (): Promise<UserType | null> => {
+    queryFn: async (): Promise<PrivateUser | null> => {
       const response = await api.get("/auth/me");
       if (response.data) {
         return response.data;
@@ -40,7 +40,7 @@ export function useFetchUserById(userId?: string | null) {
     queryFn: async () => {
       if (!userId) return null;
       const response = await api.get(`/user/${userId}`);
-      console.log(response.data); 
+      console.log(response.data);
       const data = await response.data;
       return data;
     },
@@ -73,8 +73,12 @@ export function useUpdateUser() {
       const data = await response.data;
       return data;
     },
+    onSuccess: () => {
+      toast("Profile updated successfully");
+    },
     onError: (err: any) => {
       console.error(err);
+      toast("Failed to update profile");
     },
   });
 }

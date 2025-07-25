@@ -60,16 +60,17 @@ def update_user(
     """Update a user in the database"""
     authorized = user.userId == userId
     if not authorized:
+        logger.error(f"Unauthorized: {user.userId} is not authorized to update {userId}")
         raise HTTPException(status_code=403, detail="Unauthorized")
-    try:
 
+    try:
         result = (
             db.query(User)
             .filter(User.userId == userId)
             .update(request.model_dump(exclude_none=True))
         )
         db.commit()
-        logger.info(f"User updated: {result}")
+        logger.info(f"Users updated:{result}")
 
         return JSONResponse(content=result)
     except Exception as e:
@@ -86,6 +87,7 @@ def delete_user(
 ):
     authorized = user.userId == userId
     if not authorized:
+        logger.error(f"Unauthorized: {user.userId} is not authorized to delete {userId}")
         raise HTTPException(status_code=403, detail="Unauthorized")
     try:
 
