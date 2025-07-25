@@ -8,5 +8,6 @@ client = Client(
     project_id=settings.stytch_project_id,
     secret=settings.stytch_secret,
     environment="test" if settings.environment == "dev" else "live",
+    custom_base_url=settings.stytch_project_domain,
 )
 logger.info(f"STYTCH CLIENT INITIALIZED")

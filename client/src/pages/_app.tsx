@@ -9,7 +9,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StytchProvider } from "@stytch/nextjs";
 import { createStytchUIClient } from "@stytch/nextjs/ui";
 import { environment } from "@/environment";
-import { Analytics } from "@vercel/analytics/react";
 import { toast } from "sonner";
 import { handleLinkedInWebView } from "@/lib/utils";
 import { Toaster } from "sonner";
@@ -45,7 +44,8 @@ export const fontWorkSans = Work_Sans({
 });
 
 const queryClient = new QueryClient();
-const stytch = createStytchUIClient(environment.stytch_public_token as string, {
+const stytch = createStytchUIClient(environment.stytch_public_token as string,
+  {
   cookieOptions: {
     availableToSubdomains: true,
     domain: environment.client_url?.replace("https://", "").replace("www.", ""),
@@ -123,7 +123,6 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
           <UserProvider>
             {getLayout(
               <>
-                <Analytics />
                 <div className={`${fontWorkSans.className} overflow-hidden`}>
                   <Component {...pageProps} />
                   <Toaster />
