@@ -22,11 +22,18 @@ import { GithubIcon, XIcon } from "@/layouts/icons";
 import { Link, Linkedin } from "lucide-react";
 import { useUpdateUser } from "@/hooks/user";
 
-const optionalUrl = z.string().url().or(z.literal(""));
+const optionalUrl = z
+  .url("Please enter a valid URL")
+  .or(z.literal(""))
+  .optional();
 
 const profileFormSchema = z.object({
-  fullName: z.string().min(2, "Name must be at least 2 characters long").max(128, "Name must be at most 128 characters long").optional(),
-  bio: z.string("Please enter a bio").max(160, "Bio must be at most 160 characters long").min(4, "Bio must be at least 4 characters long").optional(),
+  fullName: z
+    .string()
+    .min(2, "Name must be at least 2 characters long")
+    .max(128, "Name must be at most 128 characters long")
+    .optional(),
+  bio: z.string("Please enter a bio").optional(),
   githubUrl: optionalUrl,
   linkedinUrl: optionalUrl,
   xUrl: optionalUrl,
@@ -50,7 +57,11 @@ export function ProfileForm() {
     defaultValues,
     mode: "onSubmit",
   });
-  const { mutateAsync: updateUser } = useUpdateUser();
+  const {
+    mutateAsync: updateUser,
+    isPending: isUpdating,
+    error,
+  } = useUpdateUser();
 
   function onSubmit(data: ProfileFormValues) {
     updateUser({
@@ -167,8 +178,7 @@ export function ProfileForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                <XIcon className="w-3 h-3" />
-                X (Formerly Twitter) (optional)
+                <XIcon className="w-3 h-3" />X (Formerly Twitter) (optional)
               </FormLabel>
               <FormControl>
                 <Input {...field} />
@@ -195,7 +205,9 @@ export function ProfileForm() {
             </FormItem>
           )}
         />
-        <Button type="submit">Save Changes</Button>
+        <Button disabled={isUpdating} type="submit">
+          {isUpdating ? "Saving..." : "Save Changes"}
+        </Button>
       </form>
     </Form>
   );

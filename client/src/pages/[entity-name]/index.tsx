@@ -13,7 +13,7 @@ import { ArrowRight } from "lucide-react";
 import { useUser } from "@/providers/user-provider";
 
 // constants
-const MOCK_AGENT_COUNT = 10;
+const MOCK_AGENT_COUNT = 7;
 
 // sub-components
 function ProfileActions() {
